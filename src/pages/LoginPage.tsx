@@ -1,6 +1,40 @@
-import { Link } from 'react-router-dom'
+import { useState, FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const { logIn, logInWithGoogle } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+    setSubmitting(true)
+    try {
+      await logIn(email, password)
+      navigate('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setError('')
+    try {
+      await logInWithGoogle()
+      navigate('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Try again.')
+    }
+  }
+
   return (
     <div
       className="flex min-h-screen items-center justify-center px-6 py-12"
@@ -22,14 +56,22 @@ export default function LoginPage() {
           Log in to keep the story going.
         </p>
 
-        {/* Placeholder form — wire up to Firebase Auth next */}
-        <form className="flex flex-col gap-4">
+        {error && (
+          <div className="mb-4 rounded-xl border-[2px] border-ink bg-pink/20 px-4 py-3 text-[13px] font-semibold text-ink">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="mb-1.5 block font-mono text-[11px] font-bold uppercase tracking-wide text-[#4a4460]">
               Email
             </label>
             <input
               type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="w-full rounded-xl border-[2.5px] border-ink px-4 py-3 text-[14.5px] font-medium outline-none"
             />
@@ -40,13 +82,16 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full rounded-xl border-[2.5px] border-ink px-4 py-3 text-[14.5px] font-medium outline-none"
             />
           </div>
 
-          <button type="submit" className="btn-primary mt-2 w-full !text-center">
-            Log in →
+          <button type="submit" disabled={submitting} className="btn-primary mt-2 w-full !text-center disabled:opacity-60">
+            {submitting ? 'Logging in…' : 'Log in →'}
           </button>
         </form>
 
@@ -56,7 +101,9 @@ export default function LoginPage() {
           <div className="h-[2px] flex-1 bg-ink/10" />
         </div>
 
-        <button className="btn-secondary w-full !text-center">Continue with Google</button>
+        <button onClick={handleGoogleLogin} className="btn-secondary w-full !text-center">
+          Continue with Google
+        </button>
 
         <p className="mt-6 text-center text-[13.5px] font-medium text-[#4a4460]">
           New to Tripzy?{' '}

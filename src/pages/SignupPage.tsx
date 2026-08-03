@@ -1,6 +1,41 @@
-import { Link } from 'react-router-dom'
+import { useState, FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
 export default function SignupPage() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const { signUp, logInWithGoogle } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+    setSubmitting(true)
+    try {
+      await signUp(name, email, password)
+      navigate('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleGoogleSignup() {
+    setError('')
+    try {
+      await logInWithGoogle()
+      navigate('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Try again.')
+    }
+  }
+
   return (
     <div
       className="flex min-h-screen items-center justify-center px-6 py-12"
@@ -22,14 +57,22 @@ export default function SignupPage() {
           Free forever for solo trips. No card required.
         </p>
 
-        {/* Placeholder form — wire up to Firebase Auth next */}
-        <form className="flex flex-col gap-4">
+        {error && (
+          <div className="mb-4 rounded-xl border-[2px] border-ink bg-pink/20 px-4 py-3 text-[13px] font-semibold text-ink">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="mb-1.5 block font-mono text-[11px] font-bold uppercase tracking-wide text-[#4a4460]">
               Name
             </label>
             <input
               type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
               className="w-full rounded-xl border-[2.5px] border-ink px-4 py-3 text-[14.5px] font-medium outline-none"
             />
@@ -40,6 +83,9 @@ export default function SignupPage() {
             </label>
             <input
               type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="w-full rounded-xl border-[2.5px] border-ink px-4 py-3 text-[14.5px] font-medium outline-none"
             />
@@ -50,13 +96,17 @@ export default function SignupPage() {
             </label>
             <input
               type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full rounded-xl border-[2.5px] border-ink px-4 py-3 text-[14.5px] font-medium outline-none"
             />
           </div>
 
-          <button type="submit" className="btn-primary mt-2 w-full !text-center">
-            Create account →
+          <button type="submit" disabled={submitting} className="btn-primary mt-2 w-full !text-center disabled:opacity-60">
+            {submitting ? 'Creating account…' : 'Create account →'}
           </button>
         </form>
 
@@ -66,7 +116,9 @@ export default function SignupPage() {
           <div className="h-[2px] flex-1 bg-ink/10" />
         </div>
 
-        <button className="btn-secondary w-full !text-center">Continue with Google</button>
+        <button onClick={handleGoogleSignup} className="btn-secondary w-full !text-center">
+          Continue with Google
+        </button>
 
         <p className="mt-6 text-center text-[13.5px] font-medium text-[#4a4460]">
           Already have an account?{' '}
