@@ -5,6 +5,8 @@ import LandingPage from '@/pages/LandingPage'
 import SignupPage from '@/pages/SignupPage'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
+import TripDetailPage from '@/pages/TripDetailPage'
+import JoinTripPage from '@/pages/JoinTripPage'
 
 function App() {
   return (
@@ -18,6 +20,22 @@ function App() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trip/:tripId"
+          element={
+            <ProtectedRoute>
+              <TripDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join/:tripId/:inviteCode"
+          element={
+            <ProtectedRoute>
+              <JoinTripPage />
             </ProtectedRoute>
           }
         />
