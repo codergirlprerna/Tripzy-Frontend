@@ -5,13 +5,15 @@ import {
   getDoc,
   updateDoc,
   arrayUnion,
+  arrayRemove,
+  deleteField,
   query,
   where,
   orderBy,
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { NewTrip, Trip } from '@/types/trip'
+import { NewTrip, Trip, TripRole } from '@/types/trip'
 
 const TRIPS_COLLECTION = 'trips'
 
@@ -52,6 +54,19 @@ export function subscribeToUserTrips(userId: string, callback: (trips: Trip[]) =
       ...doc.data(),
     })) as Trip[]
     callback(trips)
+  })
+}
+
+export async function setMemberRole(tripId: string, uid: string, role: TripRole) {
+  await updateDoc(doc(db, TRIPS_COLLECTION, tripId), {
+    [`members.${uid}.role`]: role,
+  })
+}
+
+export async function removeMember(tripId: string, uid: string) {
+  await updateDoc(doc(db, TRIPS_COLLECTION, tripId), {
+    memberIds: arrayRemove(uid),
+    [`members.${uid}`]: deleteField(),
   })
 }
 

@@ -1,6 +1,7 @@
 import { Trip } from '@/types/trip'
 import { Expense } from '@/types/expense'
 import { computeBalances } from '@/lib/balances'
+import { setExpenseSettled } from '@/lib/expenses'
 
 type Props = {
   trip: Trip
@@ -9,6 +10,10 @@ type Props = {
 
 export default function ExpensesView({ trip, expenses }: Props) {
   const currencyBalances = computeBalances(expenses, trip.members)
+
+  async function toggleSettled(expense: Expense) {
+    await setExpenseSettled(trip.id, expense.id, !expense.settled)
+  }
 
   return (
     <div>
@@ -23,7 +28,9 @@ export default function ExpensesView({ trip, expenses }: Props) {
             {expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="sticker-card flex items-center justify-between p-4 shadow-hard-sm"
+                className={`sticker-card flex items-center justify-between p-4 shadow-hard-sm ${
+                  expense.settled ? 'opacity-50' : ''
+                }`}
               >
                 <div>
                   <div className="font-display text-[15px] font-extrabold">{expense.description}</div>
@@ -31,8 +38,18 @@ export default function ExpensesView({ trip, expenses }: Props) {
                     Paid by {expense.paidByName} · split {expense.splitBetween.length} ways
                   </div>
                 </div>
-                <div className="font-mono text-[16px] font-bold text-ink">
-                  {expense.amount.toFixed(2)} {expense.currency}
+                <div className="flex items-center gap-3">
+                  <div className="font-mono text-[16px] font-bold text-ink">
+                    {expense.amount.toFixed(2)} {expense.currency}
+                  </div>
+                  <button
+                    onClick={() => toggleSettled(expense)}
+                    className={`rounded-full border-2 border-ink px-3 py-1.5 text-[11px] font-bold ${
+                      expense.settled ? 'bg-lime' : 'bg-white'
+                    }`}
+                  >
+                    {expense.settled ? '✓ Settled' : 'Settle up'}
+                  </button>
                 </div>
               </div>
             ))}

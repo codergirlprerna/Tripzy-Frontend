@@ -25,6 +25,8 @@ export function computeBalances(
   const byCurrency = new Map<string, Map<string, number>>()
 
   for (const expense of expenses) {
+    if (expense.settled) continue
+
     if (!byCurrency.has(expense.currency)) {
       byCurrency.set(expense.currency, new Map())
     }

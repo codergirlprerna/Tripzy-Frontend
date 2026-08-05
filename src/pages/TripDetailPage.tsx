@@ -11,6 +11,10 @@ import RecapModal from '@/components/RecapModal'
 import TripMap from '@/components/TripMap'
 import ExpensesView from '@/components/ExpensesView'
 import AddExpenseModal from '@/components/AddExpenseModal'
+import ChatPanel from '@/components/ChatPanel'
+import WeatherWidget from '@/components/WeatherWidget'
+import TripCountdown from '@/components/TripCountdown'
+import MembersModal from '@/components/MembersModal'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -26,7 +30,8 @@ export default function TripDetailPage() {
   const [copied, setCopied] = useState(false)
   const [showRecap, setShowRecap] = useState(false)
   const [showAddExpense, setShowAddExpense] = useState(false)
-  const [view, setView] = useState<'photos' | 'map' | 'expenses'>('photos')
+  const [showMembers, setShowMembers] = useState(false)
+  const [view, setView] = useState<'photos' | 'map' | 'expenses' | 'chat'>('photos')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -87,6 +92,9 @@ export default function TripDetailPage() {
     )
   }
 
+  const myRole = currentUser ? trip.members[currentUser.uid]?.role : undefined
+  const canEdit = myRole === 'owner' || myRole === 'editor'
+
   return (
     <div className="min-h-screen bg-paper">
       <div className="h-[220px]" style={{ background: trip.coverColor }} />
@@ -104,8 +112,15 @@ export default function TripDetailPage() {
             {trip.description && (
               <p className="mt-2 max-w-[500px] text-[13.5px] font-medium text-[#4a4460]">{trip.description}</p>
             )}
-            <div className="mt-2 font-mono text-[11px] font-semibold text-[#7a7590]">
+            <button
+              onClick={() => setShowMembers(true)}
+              className="mt-2 font-mono text-[11px] font-semibold text-[#7a7590] underline"
+            >
               👯 {trip.memberIds.length} {trip.memberIds.length === 1 ? 'person' : 'people'} on this trip
+            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <TripCountdown startDate={trip.startDate} endDate={trip.endDate} />
+              <WeatherWidget latitude={trip.latitude} longitude={trip.longitude} />
             </div>
           </div>
 
@@ -116,23 +131,27 @@ export default function TripDetailPage() {
             <button onClick={() => setShowRecap(true)} className="btn-secondary !px-5 !py-3 !text-[14px]">
               View recap
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-              id="photo-upload"
-            />
-            <label
-              htmlFor="photo-upload"
-              className={`btn-primary inline-block cursor-pointer !px-5 !py-3 !text-[14px] ${
-                uploading ? 'pointer-events-none opacity-60' : ''
-              }`}
-            >
-              {uploading ? 'Uploading…' : '+ Add photos'}
-            </label>
+            {canEdit && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="photo-upload"
+                />
+                <label
+                  htmlFor="photo-upload"
+                  className={`btn-primary inline-block cursor-pointer !px-5 !py-3 !text-[14px] ${
+                    uploading ? 'pointer-events-none opacity-60' : ''
+                  }`}
+                >
+                  {uploading ? 'Uploading…' : '+ Add photos'}
+                </label>
+              </>
+            )}
           </div>
         </div>
 
@@ -168,9 +187,17 @@ export default function TripDetailPage() {
             >
               Expenses
             </button>
+            <button
+              onClick={() => setView('chat')}
+              className={`rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
+                view === 'chat' ? 'bg-ink text-white' : 'text-ink'
+              }`}
+            >
+              Chat
+            </button>
           </div>
 
-          {view === 'expenses' && (
+          {view === 'expenses' && canEdit && (
             <div className="mb-6 flex justify-end">
               <button onClick={() => setShowAddExpense(true)} className="btn-primary !px-5 !py-3 !text-[14px]">
                 + Add expense
@@ -192,14 +219,17 @@ export default function TripDetailPage() {
             )
           ) : view === 'map' ? (
             <TripMap entries={entries} />
-          ) : (
+          ) : view === 'expenses' ? (
             <ExpensesView trip={trip} expenses={expenses} />
+          ) : (
+            <ChatPanel tripId={trip.id} />
           )}
         </div>
       </div>
 
       {showRecap && <RecapModal trip={trip} entries={entries} onClose={() => setShowRecap(false)} />}
       {showAddExpense && <AddExpenseModal trip={trip} onClose={() => setShowAddExpense(false)} />}
+      {showMembers && <MembersModal trip={trip} onClose={() => setShowMembers(false)} />}
     </div>
   )
 }
