@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { initializeFirestore, persistentLocalCache } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -20,11 +19,9 @@ export const googleProvider = new GoogleAuthProvider()
 // persistentLocalCache turns on Firestore's built-in offline support: reads come
 // from a local IndexedDB cache when offline, and writes (chat messages, poll votes,
 // expense entries, location tags) queue automatically and sync once back online.
-// This covers every Firestore *document* write for free — it does NOT cover Storage
-// file uploads (photos, voice notes), which have no offline queueing built in and
-// need the separate custom queue in lib/offlineQueue.ts.
+// File uploads (photos, voice notes) go through Cloudinary instead of Firebase
+// Storage — see lib/cloudinary.ts — since Firebase Storage now requires a billing
+// card on file (Google policy change, Feb 2026) even to use its free tier.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
 })
-
-export const storage = getStorage(app)

@@ -99,8 +99,13 @@ export default function TripDetailPage() {
         await addPhotoEntry(tripId, currentUser.uid, userName, originalFile, blob, originalFile.name)
       }
     } catch (err: any) {
-      // Upload attempt failed even though we thought we were online — likely the
-      // connection dropped mid-request. Queue it rather than losing the photo.
+      // Could genuinely be a dropped connection, but could also be a permission
+      // error, a misconfigured upload preset, or something else entirely — queue
+      // it either way so the photo isn't lost, but be honest about which happened
+      // rather than always blaming "connection issue" when the real cause might
+      // be a bug worth noticing and fixing, not just retrying.
+      const isLikelyNetworkIssue = !navigator.onLine || err?.message?.toLowerCase().includes('network')
+
       try {
         await enqueueUpload({
           kind: 'photo',
@@ -111,7 +116,11 @@ export default function TripDetailPage() {
           exifSourceBlob: originalFile,
           fileName: originalFile.name,
         })
-        setUploadError('Connection issue — this photo has been queued and will send automatically once you\'re back online.')
+        setUploadError(
+          isLikelyNetworkIssue
+            ? "Connection issue — this photo has been queued and will send automatically once you're back online."
+            : `Upload failed (${err.message || 'unknown error'}) — queued to retry. If this keeps happening, it's likely a bug, not a connection issue.`,
+        )
       } catch {
         setUploadError(err.message || 'Upload failed for one photo. Continuing with the rest.')
       }

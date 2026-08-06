@@ -31,8 +31,13 @@ export async function getUserPlan(uid: string): Promise<Plan> {
 }
 
 export async function countOwnedTrips(uid: string): Promise<number> {
+  // Filtering only by ownerId conflicts with the Firestore rule (which checks
+  // memberIds) — Firestore rejects the whole query outright when a list query's
+  // filter doesn't structurally match what the rule checks. Reusing the same
+  // memberIds filter that's already permitted and indexed elsewhere, then
+  // narrowing to owned trips client-side, sidesteps that entirely.
   const { collection, query, where, getDocs } = await import('firebase/firestore')
-  const q = query(collection(db, 'trips'), where('ownerId', '==', uid))
+  const q = query(collection(db, 'trips'), where('memberIds', 'array-contains', uid))
   const snap = await getDocs(q)
-  return snap.size
+  return snap.docs.filter((d) => d.data().ownerId === uid).length
 }

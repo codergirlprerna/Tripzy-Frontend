@@ -8,9 +8,9 @@ import {
   orderBy,
   onSnapshot,
 } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import exifr from 'exifr'
-import { db, storage } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
+import { uploadToCloudinary } from '@/lib/cloudinary'
 import { reverseGeocode } from '@/lib/geocode'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
@@ -22,10 +22,7 @@ export async function addVoiceEntry(
   audioBlob: Blob,
   transcript: string,
 ) {
-  const storagePath = `trips/${tripId}/voice-${Date.now()}.webm`
-  const storageRef = ref(storage, storagePath)
-  await uploadBytes(storageRef, audioBlob)
-  const mediaUrl = await getDownloadURL(storageRef)
+  const mediaUrl = await uploadToCloudinary(audioBlob, `voice-${Date.now()}.webm`)
 
   await addDoc(collection(db, 'trips', tripId, 'entries'), {
     tripId,
@@ -111,10 +108,7 @@ export async function addPhotoEntry(
     // No EXIF data or unreadable — that's fine, we just skip auto-tagging for this photo.
   }
 
-  const storagePath = `trips/${tripId}/${Date.now()}-${fileName}`
-  const storageRef = ref(storage, storagePath)
-  await uploadBytes(storageRef, uploadBlob)
-  const mediaUrl = await getDownloadURL(storageRef)
+  const mediaUrl = await uploadToCloudinary(uploadBlob, fileName)
 
   let locationName: string | null = null
   if (latitude !== undefined && longitude !== undefined) {
@@ -128,8 +122,8 @@ export async function addPhotoEntry(
     type: 'photo',
     mediaUrl,
     caption: '',
-    latitude,
-    longitude,
+    latitude: latitude ?? null,
+    longitude: longitude ?? null,
     locationName,
     capturedAt: capturedAt ?? Date.now(),
     createdAt: Date.now(),
