@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { createTrip } from '@/lib/trips'
 import LocationPicker from '@/components/LocationPicker'
 import { LocationResult } from '@/lib/geocode'
+import { getUserPlan, countOwnedTrips, PLAN_LIMITS } from '@/lib/users'
 
 const COVER_OPTIONS = [
   { id: 'sunset', gradient: 'linear-gradient(160deg,#ff6ec7,#ffb86b)' },
@@ -35,6 +36,19 @@ export default function CreateTripModal({ onClose }: Props) {
     setError('')
     setSubmitting(true)
     try {
+      const [plan, ownedTripCount] = await Promise.all([
+        getUserPlan(currentUser.uid),
+        countOwnedTrips(currentUser.uid),
+      ])
+
+      if (ownedTripCount >= PLAN_LIMITS[plan].maxOwnedTrips) {
+        setError(
+          `You've hit the ${plan === 'free' ? 'Free plan' : 'plan'} limit of ${PLAN_LIMITS[plan].maxOwnedTrips} trips. Upgrade to Crew for unlimited trips.`,
+        )
+        setSubmitting(false)
+        return
+      }
+
       await createTrip(
         {
           ownerId: currentUser.uid,

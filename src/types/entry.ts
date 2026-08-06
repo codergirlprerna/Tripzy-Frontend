@@ -3,8 +3,9 @@ export type Entry = {
   tripId: string
   createdBy: string
   createdByName: string
-  type: 'photo' | 'note'
+  type: 'photo' | 'note' | 'voice'
   mediaUrl?: string
+  transcript?: string
   caption: string
   latitude?: number
   longitude?: number

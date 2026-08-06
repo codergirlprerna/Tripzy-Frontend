@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { subscribeToUserTrips } from '@/lib/trips'
 import { Trip } from '@/types/trip'
 import TripCard from '@/components/TripCard'
 import CreateTripModal from '@/components/CreateTripModal'
 
 export default function DashboardPage() {
-  const { currentUser, logOut } = useAuth()
-  const navigate = useNavigate()
+  const { currentUser } = useAuth()
   const [trips, setTrips] = useState<Trip[]>([])
   const [loadingTrips, setLoadingTrips] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -21,11 +20,6 @@ export default function DashboardPage() {
     })
     return unsubscribe
   }, [currentUser])
-
-  async function handleLogOut() {
-    await logOut()
-    navigate('/')
-  }
 
   return (
     <div className="min-h-screen bg-paper">
@@ -42,9 +36,9 @@ export default function DashboardPage() {
             <span className="text-[14px] font-semibold text-[#4a4460]">
               {currentUser?.displayName || currentUser?.email}
             </span>
-            <button onClick={handleLogOut} className="btn-secondary !px-4 !py-2 !text-[13px]">
-              Log out
-            </button>
+            <Link to="/settings" className="btn-secondary !px-4 !py-2 !text-[13px]">
+              ⚙️ Settings
+            </Link>
           </div>
         </div>
       </header>

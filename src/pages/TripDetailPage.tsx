@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { getTrip, subscribeToTripEntries, addPhotoEntry } from '@/lib/entries'
+import { getTrip, subscribeToTripEntries, addPhotoEntry, addVoiceEntry } from '@/lib/entries'
+import { enqueueUpload } from '@/lib/offlineQueue'
 import { subscribeToTripExpenses } from '@/lib/expenses'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 import { Expense } from '@/types/expense'
 import EntryCard from '@/components/EntryCard'
+import VoiceEntryCard from '@/components/VoiceEntryCard'
+import VoiceRecorderModal from '@/components/VoiceRecorderModal'
 import RecapModal from '@/components/RecapModal'
 import TripMap from '@/components/TripMap'
 import ExpensesView from '@/components/ExpensesView'
@@ -15,6 +18,7 @@ import ChatPanel from '@/components/ChatPanel'
 import WeatherWidget from '@/components/WeatherWidget'
 import TripCountdown from '@/components/TripCountdown'
 import MembersModal from '@/components/MembersModal'
+import PhotoEditorModal from '@/components/PhotoEditorModal'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -31,7 +35,11 @@ export default function TripDetailPage() {
   const [showRecap, setShowRecap] = useState(false)
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   const [view, setView] = useState<'photos' | 'map' | 'expenses' | 'chat'>('photos')
+  const [editQueue, setEditQueue] = useState<File[]>([])
+  const [editIndex, setEditIndex] = useState(0)
+  const [editImageSrc, setEditImageSrc] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -58,22 +66,97 @@ export default function TripDetailPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
-    if (!files || files.length === 0 || !tripId || !currentUser) return
+    if (!files || files.length === 0) return
+
+    const fileList = Array.from(files)
+    setEditQueue(fileList)
+    setEditIndex(0)
+    setEditImageSrc(URL.createObjectURL(fileList[0]))
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function uploadEditedPhoto(blob: Blob) {
+    if (!tripId || !currentUser) return
+    const originalFile = editQueue[editIndex]
+    const userName = currentUser.displayName || currentUser.email || 'Someone'
 
     setUploading(true)
     setUploadError('')
     try {
-      const userName = currentUser.displayName || currentUser.email || 'Someone'
-      for (const file of Array.from(files)) {
-        await addPhotoEntry(tripId, currentUser.uid, userName, file)
+      if (!navigator.onLine) {
+        await enqueueUpload({
+          kind: 'photo',
+          tripId,
+          userId: currentUser.uid,
+          userName,
+          blob,
+          exifSourceBlob: originalFile,
+          fileName: originalFile.name,
+        })
+      } else {
+        await addPhotoEntry(tripId, currentUser.uid, userName, originalFile, blob, originalFile.name)
       }
     } catch (err: any) {
-      setUploadError(err.message || 'Upload failed. Try again.')
+      // Upload attempt failed even though we thought we were online — likely the
+      // connection dropped mid-request. Queue it rather than losing the photo.
+      try {
+        await enqueueUpload({
+          kind: 'photo',
+          tripId,
+          userId: currentUser.uid,
+          userName,
+          blob,
+          exifSourceBlob: originalFile,
+          fileName: originalFile.name,
+        })
+        setUploadError('Connection issue — this photo has been queued and will send automatically once you\'re back online.')
+      } catch {
+        setUploadError(err.message || 'Upload failed for one photo. Continuing with the rest.')
+      }
     } finally {
       setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      advanceEditQueue()
+    }
+  }
+
+  function advanceEditQueue() {
+    if (editImageSrc) URL.revokeObjectURL(editImageSrc)
+
+    const nextIndex = editIndex + 1
+    if (nextIndex >= editQueue.length) {
+      setEditQueue([])
+      setEditIndex(0)
+      setEditImageSrc(null)
+      return
+    }
+
+    setEditIndex(nextIndex)
+    setEditImageSrc(URL.createObjectURL(editQueue[nextIndex]))
+  }
+
+  function cancelEditQueue() {
+    if (editImageSrc) URL.revokeObjectURL(editImageSrc)
+    setEditQueue([])
+    setEditIndex(0)
+    setEditImageSrc(null)
+  }
+
+  async function handleSaveVoiceNote(audioBlob: Blob, transcript: string) {
+    if (!tripId || !currentUser) return
+    const userName = currentUser.displayName || currentUser.email || 'Someone'
+
+    try {
+      if (!navigator.onLine) {
+        await enqueueUpload({ kind: 'voice', tripId, userId: currentUser.uid, userName, blob: audioBlob, transcript })
+      } else {
+        await addVoiceEntry(tripId, currentUser.uid, userName, audioBlob, transcript)
+      }
+    } catch {
+      await enqueueUpload({ kind: 'voice', tripId, userId: currentUser.uid, userName, blob: audioBlob, transcript })
+    } finally {
+      setShowVoiceRecorder(false)
     }
   }
 
@@ -133,6 +216,9 @@ export default function TripDetailPage() {
             </button>
             {canEdit && (
               <>
+                <button onClick={() => setShowVoiceRecorder(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
+                  🎤 Voice note
+                </button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -212,9 +298,13 @@ export default function TripDetailPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {entries.map((entry) => (
-                  <EntryCard key={entry.id} entry={entry} />
-                ))}
+                {entries.map((entry) =>
+                  entry.type === 'voice' ? (
+                    <VoiceEntryCard key={entry.id} entry={entry} />
+                  ) : (
+                    <EntryCard key={entry.id} entry={entry} />
+                  ),
+                )}
               </div>
             )
           ) : view === 'map' ? (
@@ -230,6 +320,20 @@ export default function TripDetailPage() {
       {showRecap && <RecapModal trip={trip} entries={entries} onClose={() => setShowRecap(false)} />}
       {showAddExpense && <AddExpenseModal trip={trip} onClose={() => setShowAddExpense(false)} />}
       {showMembers && <MembersModal trip={trip} onClose={() => setShowMembers(false)} />}
+      {showVoiceRecorder && (
+        <VoiceRecorderModal onSave={handleSaveVoiceNote} onClose={() => setShowVoiceRecorder(false)} />
+      )}
+      {editImageSrc && (
+        <PhotoEditorModal
+          imageSrc={editImageSrc}
+          fileName={editQueue[editIndex]?.name || ''}
+          currentIndex={editIndex}
+          totalCount={editQueue.length}
+          onConfirm={uploadEditedPhoto}
+          onSkip={advanceEditQueue}
+          onCancelAll={cancelEditQueue}
+        />
+      )}
     </div>
   )
 }

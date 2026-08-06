@@ -15,6 +15,31 @@ import { reverseGeocode } from '@/lib/geocode'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 
+export async function addVoiceEntry(
+  tripId: string,
+  userId: string,
+  userName: string,
+  audioBlob: Blob,
+  transcript: string,
+) {
+  const storagePath = `trips/${tripId}/voice-${Date.now()}.webm`
+  const storageRef = ref(storage, storagePath)
+  await uploadBytes(storageRef, audioBlob)
+  const mediaUrl = await getDownloadURL(storageRef)
+
+  await addDoc(collection(db, 'trips', tripId, 'entries'), {
+    tripId,
+    createdBy: userId,
+    createdByName: userName,
+    type: 'voice',
+    mediaUrl,
+    transcript,
+    caption: '',
+    capturedAt: Date.now(),
+    createdAt: Date.now(),
+  })
+}
+
 export async function setEntryLocation(
   tripId: string,
   entryId: string,
@@ -48,18 +73,33 @@ export function subscribeToTripEntries(tripId: string, callback: (entries: Entry
 }
 
 /**
- * Uploads a photo file, reads its EXIF date + GPS coordinates (if present),
- * stores the file in Firebase Storage, and writes the entry to Firestore.
- * Falls back gracefully — a photo with no EXIF data still uploads fine,
- * it just won't have an auto-detected date or location.
+ * Uploads a photo, reads its EXIF date + GPS coordinates, stores it in Firebase
+ * Storage, and writes the entry to Firestore.
+ *
+ * `exifSourceFile` and `uploadBlob` are deliberately separate: once a photo has
+ * been cropped or rotated, the edited output is a brand-new canvas-rendered
+ * image with NO EXIF data at all (canvas re-encoding always strips it). So EXIF
+ * must be read from the original, untouched file, while the edited version is
+ * what actually gets uploaded. If a photo was never edited, both params are
+ * just the same original file.
  */
-export async function addPhotoEntry(tripId: string, userId: string, userName: string, file: File) {
+export async function addPhotoEntry(
+  tripId: string,
+  userId: string,
+  userName: string,
+  exifSourceFile: File,
+  uploadBlob: Blob,
+  fileName: string,
+) {
   let capturedAt: number | null = null
   let latitude: number | undefined
   let longitude: number | undefined
 
   try {
-    const exifData = await exifr.parse(file, { gps: true, pick: ['DateTimeOriginal', 'latitude', 'longitude'] })
+    const exifData = await exifr.parse(exifSourceFile, {
+      gps: true,
+      pick: ['DateTimeOriginal', 'latitude', 'longitude'],
+    })
     if (exifData?.DateTimeOriginal) {
       capturedAt = new Date(exifData.DateTimeOriginal).getTime()
     }
@@ -71,9 +111,9 @@ export async function addPhotoEntry(tripId: string, userId: string, userName: st
     // No EXIF data or unreadable — that's fine, we just skip auto-tagging for this photo.
   }
 
-  const storagePath = `trips/${tripId}/${Date.now()}-${file.name}`
+  const storagePath = `trips/${tripId}/${Date.now()}-${fileName}`
   const storageRef = ref(storage, storagePath)
-  await uploadBytes(storageRef, file)
+  await uploadBytes(storageRef, uploadBlob)
   const mediaUrl = await getDownloadURL(storageRef)
 
   let locationName: string | null = null

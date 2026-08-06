@@ -7,10 +7,13 @@ import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import TripDetailPage from '@/pages/TripDetailPage'
 import JoinTripPage from '@/pages/JoinTripPage'
+import SettingsPage from '@/pages/SettingsPage'
+import OfflineSyncBanner from '@/components/OfflineSyncBanner'
 
 function App() {
   return (
     <AuthProvider>
+      <OfflineSyncBanner />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignupPage />} />
@@ -36,6 +39,14 @@ function App() {
           element={
             <ProtectedRoute>
               <JoinTripPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

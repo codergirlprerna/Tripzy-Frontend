@@ -90,6 +90,16 @@ export async function joinTripByInvite(tripId: string, inviteCode: string, userI
     return // already a member, nothing to do
   }
 
+  // Traveler limit is based on the TRIP OWNER's plan, not the joiner's —
+  // it's the owner's subscription that determines how big their trip can get.
+  const { getUserPlan, PLAN_LIMITS } = await import('@/lib/users')
+  const ownerPlan = await getUserPlan(trip.ownerId)
+  if (trip.memberIds.length >= PLAN_LIMITS[ownerPlan].maxTravelersPerTrip) {
+    throw new Error(
+      `This trip is full — the owner's plan allows up to ${PLAN_LIMITS[ownerPlan].maxTravelersPerTrip} travelers per trip.`,
+    )
+  }
+
   await updateDoc(tripRef, {
     memberIds: arrayUnion(userId),
     [`members.${userId}`]: { role: 'editor', joinedAt: Date.now(), name: userName },

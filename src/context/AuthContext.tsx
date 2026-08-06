@@ -9,6 +9,7 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { auth, googleProvider } from '@/lib/firebase'
+import { ensureUserProfile } from '@/lib/users'
 
 type AuthContextValue = {
   currentUser: User | null
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
       setLoading(false)
+      if (user) ensureUserProfile(user.uid, user.email)
     })
     return unsubscribe
   }, [])
