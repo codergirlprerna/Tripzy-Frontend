@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { initializeFirestore, persistentLocalCache } from 'firebase/firestore'
+import { getAnalytics, isSupported } from 'firebase/analytics'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -9,6 +10,7 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
 const app = initializeApp(firebaseConfig)
@@ -24,4 +26,14 @@ export const googleProvider = new GoogleAuthProvider()
 // card on file (Google policy change, Feb 2026) even to use its free tier.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
+})
+
+// Analytics only initializes if the browser supports it AND a measurementId is
+// configured — without a linked GA4 property (Firebase console → Project Settings
+// → Integrations → Google Analytics), this silently stays null rather than crashing.
+export let analytics: ReturnType<typeof getAnalytics> | null = null
+isSupported().then((supported) => {
+  if (supported && firebaseConfig.measurementId) {
+    analytics = getAnalytics(app)
+  }
 })

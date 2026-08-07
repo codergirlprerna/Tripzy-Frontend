@@ -19,6 +19,9 @@ import WeatherWidget from '@/components/WeatherWidget'
 import TripCountdown from '@/components/TripCountdown'
 import MembersModal from '@/components/MembersModal'
 import PhotoEditorModal from '@/components/PhotoEditorModal'
+import DestinationGuideModal from '@/components/DestinationGuideModal'
+import NotificationBell from '@/components/NotificationBell'
+import AIStoryModal from '@/components/AIStoryModal'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -36,6 +39,8 @@ export default function TripDetailPage() {
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
+  const [showAIStory, setShowAIStory] = useState(false)
   const [view, setView] = useState<'photos' | 'map' | 'expenses' | 'chat'>('photos')
   const [editQueue, setEditQueue] = useState<File[]>([])
   const [editIndex, setEditIndex] = useState(0)
@@ -216,7 +221,14 @@ export default function TripDetailPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <NotificationBell tripId={trip.id} />
+            <button onClick={() => setShowGuide(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
+              🗺️ Guide
+            </button>
+            <button onClick={() => setShowAIStory(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
+              ✨ AI story
+            </button>
             <button onClick={handleCopyInvite} className="btn-secondary !px-5 !py-3 !text-[14px]">
               {copied ? 'Link copied!' : '+ Invite'}
             </button>
@@ -329,6 +341,8 @@ export default function TripDetailPage() {
       {showRecap && <RecapModal trip={trip} entries={entries} onClose={() => setShowRecap(false)} />}
       {showAddExpense && <AddExpenseModal trip={trip} onClose={() => setShowAddExpense(false)} />}
       {showMembers && <MembersModal trip={trip} onClose={() => setShowMembers(false)} />}
+      {showGuide && <DestinationGuideModal location={trip.location} onClose={() => setShowGuide(false)} />}
+      {showAIStory && <AIStoryModal trip={trip} entries={entries} onClose={() => setShowAIStory(false)} />}
       {showVoiceRecorder && (
         <VoiceRecorderModal onSave={handleSaveVoiceNote} onClose={() => setShowVoiceRecorder(false)} />
       )}
