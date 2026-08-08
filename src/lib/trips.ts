@@ -3,7 +3,10 @@ import {
   addDoc,
   doc,
   getDoc,
+  getDocs,
   updateDoc,
+  deleteDoc,
+  writeBatch,
   arrayUnion,
   arrayRemove,
   deleteField,
@@ -13,7 +16,10 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { logAnalyticsEvent } from '@/lib/analytics'
+import { deleteCloudinaryAssets } from '@/lib/cloudinaryCleanup'
 import { NewTrip, Trip, TripRole } from '@/types/trip'
+import { User } from 'firebase/auth'
 
 const TRIPS_COLLECTION = 'trips'
 
@@ -34,6 +40,7 @@ export async function createTrip(trip: NewTrip, ownerName: string) {
     },
     inviteCode,
   })
+  logAnalyticsEvent('trip_created', { location: trip.location })
 }
 
 /**
@@ -104,4 +111,74 @@ export async function joinTripByInvite(tripId: string, inviteCode: string, userI
     memberIds: arrayUnion(userId),
     [`members.${userId}`]: { role: 'editor', joinedAt: Date.now(), name: userName },
   })
+  logAnalyticsEvent('trip_joined', { trip_id: tripId })
+}
+
+/**
+ * Best-effort fallback for entries created before mediaPublicId/mediaResourceType
+ * were stored (see lib/cloudinary.ts) — Cloudinary URLs encode both values in
+ * a predictable shape:
+ *   https://res.cloudinary.com/<cloud>/<resource_type>/upload/v<version>/<public_id>.<ext>
+ * Returns null for anything that doesn't match (already-deleted assets,
+ * external URLs, malformed data) rather than guessing.
+ */
+function parseCloudinaryUrl(url: string): { publicId: string; resourceType: string } | null {
+  const match = url.match(/\/([a-z]+)\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+(?:\?.*)?$/)
+  if (!match) return null
+  return { resourceType: match[1], publicId: match[2] }
+}
+
+/**
+ * Deletes a trip AND everything under it — entries, messages, expenses, and
+ * (as of this version) the actual photo/voice files on Cloudinary, not just
+ * the Firestore records pointing at them.
+ *
+ * Ordering matters here: Cloudinary cleanup runs FIRST, while the trip
+ * document and its member list still exist, because the server-side
+ * ownership check (api/delete-cloudinary-assets.ts) reads exactly that data
+ * to confirm the caller is actually allowed to delete these files. Deleting
+ * Firestore first would leave nothing for that check to verify against.
+ *
+ * `user` needs to be the actual Firebase Auth User (not just a uid string) —
+ * the Cloudinary cleanup call authenticates with a Firebase ID token, which
+ * only a live User object can produce (see lib/cloudinaryCleanup.ts).
+ *
+ * Returns true if Cloudinary cleanup fully succeeded, false if it partially
+ * or fully failed. Either way, the trip and its Firestore data are still
+ * deleted — a Cloudinary hiccup (rate limit, transient network error)
+ * shouldn't leave someone stuck with a trip they can't get rid of. A false
+ * return just means some files may be lingering in Cloudinary storage;
+ * check the browser console for what failed.
+ */
+export async function deleteTrip(user: User, tripId: string): Promise<boolean> {
+  const entriesSnap = await getDocs(collection(db, TRIPS_COLLECTION, tripId, 'entries'))
+
+  const assets = entriesSnap.docs
+    .map((d) => {
+      const data = d.data() as any
+      if (data.mediaPublicId && data.mediaResourceType) {
+        return { publicId: data.mediaPublicId as string, resourceType: data.mediaResourceType as string }
+      }
+      if (data.mediaUrl) return parseCloudinaryUrl(data.mediaUrl)
+      return null
+    })
+    .filter((asset): asset is { publicId: string; resourceType: string } => asset !== null)
+
+  const cloudinaryCleanupOk = await deleteCloudinaryAssets(user, tripId, assets)
+
+  const subcollections = ['entries', 'messages', 'expenses']
+  for (const sub of subcollections) {
+    // Reuse the already-fetched snapshot for 'entries' instead of a second read.
+    const snap = sub === 'entries' ? entriesSnap : await getDocs(collection(db, TRIPS_COLLECTION, tripId, sub))
+    // Batched writes cap at 500 ops — fine for a trip's normal volume, but
+    // a trip with a huge amount of activity would need chunking into
+    // multiple batches (or a server-side recursive delete) instead.
+    const batch = writeBatch(db)
+    snap.docs.forEach((d) => batch.delete(d.ref))
+    if (!snap.empty) await batch.commit()
+  }
+
+  await deleteDoc(doc(db, TRIPS_COLLECTION, tripId))
+  logAnalyticsEvent('trip_deleted', { trip_id: tripId })
+  return cloudinaryCleanupOk
 }

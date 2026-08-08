@@ -22,6 +22,7 @@ import PhotoEditorModal from '@/components/PhotoEditorModal'
 import DestinationGuideModal from '@/components/DestinationGuideModal'
 import NotificationBell from '@/components/NotificationBell'
 import AIStoryModal from '@/components/AIStoryModal'
+import DeleteTripModal from '@/components/DeleteTripModal'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -41,6 +42,7 @@ export default function TripDetailPage() {
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const [showAIStory, setShowAIStory] = useState(false)
+  const [showDeleteTrip, setShowDeleteTrip] = useState(false)
   const [view, setView] = useState<'photos' | 'map' | 'expenses' | 'chat'>('photos')
   const [editQueue, setEditQueue] = useState<File[]>([])
   const [editIndex, setEditIndex] = useState(0)
@@ -191,6 +193,7 @@ export default function TripDetailPage() {
 
   const myRole = currentUser ? trip.members[currentUser.uid]?.role : undefined
   const canEdit = myRole === 'owner' || myRole === 'editor'
+  const isOwner = myRole === 'owner'
 
   return (
     <div className="min-h-screen bg-paper">
@@ -224,7 +227,7 @@ export default function TripDetailPage() {
           <div className="flex flex-wrap items-center gap-3">
             <NotificationBell tripId={trip.id} />
             <button onClick={() => setShowGuide(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
-              🗺️ Guide
+              🧭 Tripzy Guide
             </button>
             <button onClick={() => setShowAIStory(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
               ✨ AI story
@@ -235,6 +238,16 @@ export default function TripDetailPage() {
             <button onClick={() => setShowRecap(true)} className="btn-secondary !px-5 !py-3 !text-[14px]">
               View recap
             </button>
+            {isOwner && (
+              <button
+                onClick={() => setShowDeleteTrip(true)}
+                aria-label="Delete trip"
+                title="Delete trip"
+                className="rounded-full border-[2.5px] border-ink !px-4 !py-3 text-[14px] font-bold text-[#c0325f] shadow-hard-sm transition-transform duration-150 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+              >
+                🗑️
+              </button>
+            )}
             {canEdit && (
               <>
                 <button onClick={() => setShowVoiceRecorder(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
@@ -343,6 +356,13 @@ export default function TripDetailPage() {
       {showMembers && <MembersModal trip={trip} onClose={() => setShowMembers(false)} />}
       {showGuide && <DestinationGuideModal location={trip.location} onClose={() => setShowGuide(false)} />}
       {showAIStory && <AIStoryModal trip={trip} entries={entries} onClose={() => setShowAIStory(false)} />}
+      {showDeleteTrip && (
+        <DeleteTripModal
+          trip={trip}
+          onClose={() => setShowDeleteTrip(false)}
+          onDeleted={() => navigate('/dashboard')}
+        />
+      )}
       {showVoiceRecorder && (
         <VoiceRecorderModal onSave={handleSaveVoiceNote} onClose={() => setShowVoiceRecorder(false)} />
       )}

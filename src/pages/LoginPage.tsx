@@ -7,6 +7,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
 
   const { logIn, logInWithGoogle } = useAuth()
   const navigate = useNavigate()
@@ -26,12 +27,19 @@ export default function LoginPage() {
   }
 
   async function handleGoogleLogin() {
+    if (googleSubmitting) return // the popup itself can take a moment to open — block re-clicks until it resolves
     setError('')
+    setGoogleSubmitting(true)
     try {
       await logInWithGoogle()
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Try again.')
+      // A user closing the Google popup themselves isn't a real error worth alarming them with.
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        setError(err.message || 'Something went wrong. Try again.')
+      }
+    } finally {
+      setGoogleSubmitting(false)
     }
   }
 
@@ -101,8 +109,15 @@ export default function LoginPage() {
           <div className="h-[2px] flex-1 bg-ink/10" />
         </div>
 
-        <button onClick={handleGoogleLogin} className="btn-secondary w-full !text-center">
-          Continue with Google
+        <button onClick={handleGoogleLogin} disabled={googleSubmitting} className="btn-secondary w-full !text-center disabled:opacity-60">
+          {googleSubmitting ? (
+            <span className="inline-flex items-center justify-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink border-t-transparent" />
+              Opening Google sign-in…
+            </span>
+          ) : (
+            'Continue with Google'
+          )}
         </button>
 
         <p className="mt-6 text-center text-[13.5px] font-medium text-[#4a4460]">

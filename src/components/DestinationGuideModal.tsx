@@ -1,27 +1,46 @@
 import { useEffect, useState } from 'react'
-import { fetchDestinationGuide, DestinationGuide } from '@/lib/destinationGuide'
+import { fetchTripzyGuide, TripzyGuide, GuidePlace } from '@/lib/destinationGuide'
 
 type Props = {
   location: string
   onClose: () => void
 }
 
+const TABS = ['attractions', 'food'] as const
+type Tab = (typeof TABS)[number]
+
+function PlaceRow({ place, icon }: { place: GuidePlace; icon: string }) {
+  const distanceLabel = place.distanceKm < 1 ? `${Math.round(place.distanceKm * 1000)} m` : `${place.distanceKm.toFixed(1)} km`
+  return (
+    <div className="flex items-center gap-3 rounded-xl border-[2px] border-ink/10 px-3.5 py-3">
+      <span className="text-[17px]">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13.5px] font-bold leading-tight">{place.name}</p>
+        <p className="mt-0.5 text-[11.5px] font-medium text-[#7a7590]">{place.category}</p>
+      </div>
+      <span className="shrink-0 font-mono text-[11px] font-semibold text-[#a39fb0]">{distanceLabel}</span>
+    </div>
+  )
+}
+
 export default function DestinationGuideModal({ location, onClose }: Props) {
-  const [guide, setGuide] = useState<DestinationGuide | null>(null)
+  const [guide, setGuide] = useState<TripzyGuide | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [tab, setTab] = useState<Tab>('attractions')
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setNotFound(false)
 
-    fetchDestinationGuide(location).then((result) => {
+    fetchTripzyGuide(location).then((result) => {
       if (cancelled) return
       if (!result) {
         setNotFound(true)
       } else {
         setGuide(result)
+        setTab(result.attractions.length > 0 ? 'attractions' : 'food')
       }
       setLoading(false)
     })
@@ -31,12 +50,14 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
     }
   }, [location])
 
+  const activePlaces = guide ? (tab === 'attractions' ? guide.attractions : guide.food) : []
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card max-h-[85vh] w-full max-w-[480px] overflow-y-auto p-7 shadow-hard">
-        <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="sticker-card flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden shadow-hard">
+        <div className="flex items-start justify-between gap-4 border-b-[2px] border-dashed border-ink/15 p-6 pb-4">
           <div>
-            <h2 className="font-display text-[20px] font-extrabold">Destination guide</h2>
+            <h2 className="font-display text-[20px] font-extrabold">🧭 Your Tripzy Guide</h2>
             <p className="mt-0.5 text-[12.5px] font-medium text-[#7a7590]">📍 {location}</p>
           </div>
           <button
@@ -48,42 +69,88 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
           </button>
         </div>
 
-        {loading ? (
-          <div className="py-14 text-center text-[14px] font-medium text-[#4a4460]">Looking up {location}…</div>
-        ) : notFound || !guide ? (
-          <div className="py-10 text-center">
-            <div className="mb-3 text-[28px]">🗺️</div>
-            <p className="text-[14px] font-semibold">No guide found for this destination yet.</p>
-            <p className="mt-1 text-[12.5px] font-medium text-[#7a7590]">
-              This looks up a Wikipedia summary by place name — it works best for cities, regions, and well-known
-              landmarks.
-            </p>
-          </div>
-        ) : (
-          <div>
-            {guide.thumbnailUrl && (
-              <img
-                src={guide.thumbnailUrl}
-                alt={guide.title}
-                className="mb-4 h-[180px] w-full rounded-xl border-[2.5px] border-ink object-cover"
-              />
-            )}
-            <h3 className="mb-2 font-display text-[17px] font-extrabold">{guide.title}</h3>
-            <p className="text-[13.5px] font-medium leading-relaxed text-[#4a4460]">{guide.extract}</p>
-            <a
-              href={guide.pageUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-block font-mono text-[11.5px] font-semibold text-[#4a4460] underline"
-            >
-              Read more on Wikipedia →
-            </a>
-            <p className="mt-5 border-t-[2px] border-dashed border-ink/20 pt-3 font-mono text-[10.5px] font-semibold text-[#a39fb0]">
-              General background, not live listings — for restaurant/activity recommendations, pair this with a
-              places API later.
-            </p>
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6 pt-4">
+          {loading ? (
+            <div className="flex flex-col items-center gap-3 py-14 text-center">
+              <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-ink border-t-transparent" />
+              <p className="text-[14px] font-medium text-[#4a4460]">Scouting {location.split(',')[0]}…</p>
+              <p className="text-[11.5px] font-medium text-[#a39fb0]">
+                Checking map data — this can take a few seconds.
+              </p>
+            </div>
+          ) : notFound || !guide ? (
+            <div className="py-10 text-center">
+              <div className="mb-3 text-[28px]">🗺️</div>
+              <p className="text-[14px] font-semibold">Couldn't place this destination.</p>
+              <p className="mt-1 text-[12.5px] font-medium text-[#7a7590]">
+                Try a more specific location on the trip (e.g. "Lisbon, Portugal" instead of just a country).
+              </p>
+            </div>
+          ) : (
+            <>
+              {guide.intro && (
+                <div className="mb-5">
+                  {guide.introImageUrl && (
+                    <img
+                      src={guide.introImageUrl}
+                      alt={guide.resolvedName}
+                      className="mb-3 h-[150px] w-full rounded-xl border-[2.5px] border-ink object-cover"
+                    />
+                  )}
+                  <p className="text-[13.5px] font-medium leading-relaxed text-[#4a4460]">{guide.intro}</p>
+                  {guide.wikiUrl && (
+                    <a
+                      href={guide.wikiUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-block font-mono text-[11px] font-semibold text-[#4a4460] underline"
+                    >
+                      Read more →
+                    </a>
+                  )}
+                </div>
+              )}
+
+              <div className="mb-4 flex gap-2">
+                <button
+                  onClick={() => setTab('attractions')}
+                  className={`rounded-full border-[2px] border-ink px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
+                    tab === 'attractions' ? 'bg-ink text-white' : 'bg-white text-ink'
+                  }`}
+                >
+                  🏛️ Attractions ({guide.attractions.length})
+                </button>
+                <button
+                  onClick={() => setTab('food')}
+                  className={`rounded-full border-[2px] border-ink px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
+                    tab === 'food' ? 'bg-ink text-white' : 'bg-white text-ink'
+                  }`}
+                >
+                  🍜 Food ({guide.food.length})
+                </button>
+              </div>
+
+              {activePlaces.length === 0 ? (
+                <p className="py-8 text-center text-[13px] font-medium text-[#7a7590]">
+                  {guide.placesError
+                    ? `Couldn't check nearby spots right now (${guide.placesError}). Try again in a moment.`
+                    : `No ${tab === 'attractions' ? 'attractions' : 'food spots'} found nearby in OpenStreetMap's data for this area yet.`}
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {activePlaces.map((place, i) => (
+                    <PlaceRow key={`${place.name}-${i}`} place={place} icon={tab === 'attractions' ? '📍' : '🍽️'} />
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-5 border-t-[2px] border-dashed border-ink/15 pt-3 font-mono text-[10.5px] font-semibold text-[#a39fb0]">
+                Pulled from OpenStreetMap — distances are straight-line from {guide.resolvedName}, not walking
+                routes.
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

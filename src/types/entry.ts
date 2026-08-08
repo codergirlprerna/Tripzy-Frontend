@@ -5,6 +5,8 @@ export type Entry = {
   createdByName: string
   type: 'photo' | 'note' | 'voice'
   mediaUrl?: string
+  mediaPublicId?: string // Cloudinary public_id — needed to delete the asset later; absent on entries created before this field existed
+  mediaResourceType?: string // Cloudinary resource_type ('image' | 'video' | 'raw') — deletion needs the right bucket
   transcript?: string
   caption: string
   latitude?: number

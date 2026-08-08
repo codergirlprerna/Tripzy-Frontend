@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { initializeFirestore, persistentLocalCache } from 'firebase/firestore'
-import { getAnalytics, isSupported } from 'firebase/analytics'
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics'
+import { getMessaging, isSupported as isMessagingSupported, Messaging } from 'firebase/messaging'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,6 +17,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
+// Firebase defaults to this already in a real browser, but setting it
+// explicitly rules out the SDK silently falling back to in-memory
+// persistence (which forces a re-login on every reload) in edge-case
+// environments — some in-app browsers (Instagram/WhatsApp webviews) and
+// aggressive privacy modes restrict IndexedDB, which is what local
+// persistence relies on.
+setPersistence(auth, browserLocalPersistence)
 export const googleProvider = new GoogleAuthProvider()
 
 // persistentLocalCache turns on Firestore's built-in offline support: reads come
@@ -32,8 +40,20 @@ export const db = initializeFirestore(app, {
 // configured — without a linked GA4 property (Firebase console → Project Settings
 // → Integrations → Google Analytics), this silently stays null rather than crashing.
 export let analytics: ReturnType<typeof getAnalytics> | null = null
-isSupported().then((supported) => {
+isAnalyticsSupported().then((supported) => {
   if (supported && firebaseConfig.measurementId) {
     analytics = getAnalytics(app)
   }
+})
+
+// Messaging (push notifications) only works over HTTPS/localhost, in browsers
+// that support service workers + the Push API — Safari < 16.4 and any http://
+// (non-localhost) origin will fail isMessagingSupported(), so this stays null
+// there rather than throwing. See lib/push.ts for how this is actually used.
+export let messaging: Messaging | null = null
+export const messagingReady: Promise<Messaging | null> = isMessagingSupported().then((supported) => {
+  if (supported) {
+    messaging = getMessaging(app)
+  }
+  return messaging
 })

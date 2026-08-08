@@ -51,7 +51,10 @@ export default function AIStoryModal({ trip, entries, onClose }: Props) {
         </p>
 
         {loading ? (
-          <div className="py-14 text-center text-[14px] font-medium text-[#4a4460]">Writing the story…</div>
+          <div className="flex flex-col items-center gap-3 py-14 text-center">
+            <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-ink border-t-transparent" />
+            <p className="text-[14px] font-medium text-[#4a4460]">Writing the story…</p>
+          </div>
         ) : (
           <>
             <div className="rounded-xl border-[2.5px] border-ink bg-paper-dim p-5">

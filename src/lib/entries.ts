@@ -12,6 +12,7 @@ import exifr from 'exifr'
 import { db } from '@/lib/firebase'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import { reverseGeocode } from '@/lib/geocode'
+import { logAnalyticsEvent } from '@/lib/analytics'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 
@@ -22,19 +23,22 @@ export async function addVoiceEntry(
   audioBlob: Blob,
   transcript: string,
 ) {
-  const mediaUrl = await uploadToCloudinary(audioBlob, `voice-${Date.now()}.webm`)
+  const upload = await uploadToCloudinary(audioBlob, `voice-${Date.now()}.webm`)
 
   await addDoc(collection(db, 'trips', tripId, 'entries'), {
     tripId,
     createdBy: userId,
     createdByName: userName,
     type: 'voice',
-    mediaUrl,
+    mediaUrl: upload.url,
+    mediaPublicId: upload.publicId,
+    mediaResourceType: upload.resourceType,
     transcript,
     caption: '',
     capturedAt: Date.now(),
     createdAt: Date.now(),
   })
+  logAnalyticsEvent('voice_entry_added', { trip_id: tripId })
 }
 
 export async function setEntryLocation(
@@ -108,7 +112,7 @@ export async function addPhotoEntry(
     // No EXIF data or unreadable — that's fine, we just skip auto-tagging for this photo.
   }
 
-  const mediaUrl = await uploadToCloudinary(uploadBlob, fileName)
+  const upload = await uploadToCloudinary(uploadBlob, fileName)
 
   let locationName: string | null = null
   if (latitude !== undefined && longitude !== undefined) {
@@ -120,7 +124,9 @@ export async function addPhotoEntry(
     createdBy: userId,
     createdByName: userName,
     type: 'photo',
-    mediaUrl,
+    mediaUrl: upload.url,
+    mediaPublicId: upload.publicId,
+    mediaResourceType: upload.resourceType,
     caption: '',
     latitude: latitude ?? null,
     longitude: longitude ?? null,
@@ -128,4 +134,5 @@ export async function addPhotoEntry(
     capturedAt: capturedAt ?? Date.now(),
     createdAt: Date.now(),
   })
+  logAnalyticsEvent('photo_entry_added', { trip_id: tripId })
 }

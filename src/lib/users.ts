@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export type Plan = 'free' | 'crew' | 'crew_annual'
@@ -28,6 +28,20 @@ export async function getUserPlan(uid: string): Promise<Plan> {
   const snap = await getDoc(doc(db, 'users', uid))
   if (!snap.exists()) return 'free'
   return (snap.data().plan as Plan) || 'free'
+}
+
+/**
+ * Adds a device's FCM token to the user's profile. A user can have several
+ * (phone browser, laptop browser, etc.), so this is an array, not a single
+ * field — the backend fans a push out to every token on file and drops any
+ * that come back invalid (uninstalled app, revoked permission, expired token).
+ */
+export async function saveFcmToken(uid: string, token: string) {
+  await setDoc(doc(db, 'users', uid), { fcmTokens: arrayUnion(token) }, { merge: true })
+}
+
+export async function removeFcmToken(uid: string, token: string) {
+  await setDoc(doc(db, 'users', uid), { fcmTokens: arrayRemove(token) }, { merge: true })
 }
 
 export async function countOwnedTrips(uid: string): Promise<number> {
