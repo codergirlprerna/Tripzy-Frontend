@@ -4,9 +4,11 @@ import { useAuth } from '@/context/AuthContext'
 import { getTrip, subscribeToTripEntries, addPhotoEntry, addVoiceEntry } from '@/lib/entries'
 import { enqueueUpload } from '@/lib/offlineQueue'
 import { subscribeToTripExpenses } from '@/lib/expenses'
+import { subscribeToItinerary } from '@/lib/itinerary'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 import { Expense } from '@/types/expense'
+import { ItineraryItem } from '@/types/itinerary'
 import EntryCard from '@/components/EntryCard'
 import VoiceEntryCard from '@/components/VoiceEntryCard'
 import VoiceRecorderModal from '@/components/VoiceRecorderModal'
@@ -23,6 +25,8 @@ import DestinationGuideModal from '@/components/DestinationGuideModal'
 import NotificationBell from '@/components/NotificationBell'
 import AIStoryModal from '@/components/AIStoryModal'
 import DeleteTripModal from '@/components/DeleteTripModal'
+import ItineraryView from '@/components/ItineraryView'
+import AddItineraryItemModal from '@/components/AddItineraryItemModal'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -32,6 +36,7 @@ export default function TripDetailPage() {
   const [trip, setTrip] = useState<Trip | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
@@ -43,7 +48,9 @@ export default function TripDetailPage() {
   const [showGuide, setShowGuide] = useState(false)
   const [showAIStory, setShowAIStory] = useState(false)
   const [showDeleteTrip, setShowDeleteTrip] = useState(false)
-  const [view, setView] = useState<'photos' | 'map' | 'expenses' | 'chat'>('photos')
+  const [showAddItinerary, setShowAddItinerary] = useState(false)
+  const [editingItineraryItem, setEditingItineraryItem] = useState<ItineraryItem | null>(null)
+  const [view, setView] = useState<'photos' | 'map' | 'expenses' | 'chat' | 'itinerary'>('photos')
   const [editQueue, setEditQueue] = useState<File[]>([])
   const [editIndex, setEditIndex] = useState(0)
   const [editImageSrc, setEditImageSrc] = useState<string | null>(null)
@@ -59,9 +66,11 @@ export default function TripDetailPage() {
 
     const unsubscribeEntries = subscribeToTripEntries(tripId, setEntries)
     const unsubscribeExpenses = subscribeToTripExpenses(tripId, setExpenses)
+    const unsubscribeItinerary = subscribeToItinerary(tripId, setItineraryItems)
     return () => {
       unsubscribeEntries()
       unsubscribeExpenses()
+      unsubscribeItinerary()
     }
   }, [tripId])
 
@@ -282,10 +291,10 @@ export default function TripDetailPage() {
         )}
 
         <div className="pb-16">
-          <div className="mb-6 inline-flex gap-1 rounded-full border-[2.5px] border-ink bg-white p-1">
+          <div className="mb-6 flex gap-1 overflow-x-auto rounded-full border-[2.5px] border-ink bg-white p-1">
             <button
               onClick={() => setView('photos')}
-              className={`rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
                 view === 'photos' ? 'bg-ink text-white' : 'text-ink'
               }`}
             >
@@ -293,7 +302,7 @@ export default function TripDetailPage() {
             </button>
             <button
               onClick={() => setView('map')}
-              className={`rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
                 view === 'map' ? 'bg-ink text-white' : 'text-ink'
               }`}
             >
@@ -301,15 +310,23 @@ export default function TripDetailPage() {
             </button>
             <button
               onClick={() => setView('expenses')}
-              className={`rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
                 view === 'expenses' ? 'bg-ink text-white' : 'text-ink'
               }`}
             >
               Expenses
             </button>
             <button
+              onClick={() => setView('itinerary')}
+              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
+                view === 'itinerary' ? 'bg-ink text-white' : 'text-ink'
+              }`}
+            >
+              Itinerary
+            </button>
+            <button
               onClick={() => setView('chat')}
-              className={`rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
                 view === 'chat' ? 'bg-ink text-white' : 'text-ink'
               }`}
             >
@@ -321,6 +338,20 @@ export default function TripDetailPage() {
             <div className="mb-6 flex justify-end">
               <button onClick={() => setShowAddExpense(true)} className="btn-primary !px-5 !py-3 !text-[14px]">
                 + Add expense
+              </button>
+            </div>
+          )}
+
+          {view === 'itinerary' && canEdit && (
+            <div className="mb-6 flex justify-end">
+              <button
+                onClick={() => {
+                  setEditingItineraryItem(null)
+                  setShowAddItinerary(true)
+                }}
+                className="btn-primary !px-5 !py-3 !text-[14px]"
+              >
+                + Add plan
               </button>
             </div>
           )}
@@ -345,6 +376,16 @@ export default function TripDetailPage() {
             <TripMap entries={entries} />
           ) : view === 'expenses' ? (
             <ExpensesView trip={trip} expenses={expenses} />
+          ) : view === 'itinerary' ? (
+            <ItineraryView
+              trip={trip}
+              items={itineraryItems}
+              canEdit={canEdit}
+              onEditItem={(item) => {
+                setEditingItineraryItem(item)
+                setShowAddItinerary(true)
+              }}
+            />
           ) : (
             <ChatPanel tripId={trip.id} />
           )}
@@ -356,6 +397,17 @@ export default function TripDetailPage() {
       {showMembers && <MembersModal trip={trip} onClose={() => setShowMembers(false)} />}
       {showGuide && <DestinationGuideModal location={trip.location} onClose={() => setShowGuide(false)} />}
       {showAIStory && <AIStoryModal trip={trip} entries={entries} onClose={() => setShowAIStory(false)} />}
+      {showAddItinerary && (
+        <AddItineraryItemModal
+          trip={trip}
+          editingItem={editingItineraryItem}
+          defaultDay={trip.startDate}
+          onClose={() => {
+            setShowAddItinerary(false)
+            setEditingItineraryItem(null)
+          }}
+        />
+      )}
       {showDeleteTrip && (
         <DeleteTripModal
           trip={trip}

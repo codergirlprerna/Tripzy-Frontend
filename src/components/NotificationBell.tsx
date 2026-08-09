@@ -67,7 +67,7 @@ export default function NotificationBell({ tripId }: { tripId: string }) {
       </button>
 
       {open && (
-        <div className="sticker-card absolute right-0 top-[calc(100%+8px)] z-50 max-h-[380px] w-[300px] overflow-y-auto p-3 shadow-hard-sm">
+        <div className="sticker-card fixed inset-x-4 top-[76px] z-50 max-h-[380px] overflow-y-auto p-3 shadow-hard-sm sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[300px]">
           <div className="mb-2 px-1 font-mono text-[10.5px] font-semibold text-[#a39fb0]">
             Live while this tab's open
           </div>

@@ -77,7 +77,7 @@ export default function ChatPanel({ tripId }: { tripId: string }) {
                   <PollBubble message={message} />
                 ) : (
                   <div
-                    className={`max-w-[280px] rounded-2xl border-2 border-ink px-4 py-2.5 text-[14px] font-medium ${
+                    className={`max-w-[280px] break-words rounded-2xl border-2 border-ink px-4 py-2.5 text-[14px] font-medium ${
                       isMine ? 'bg-pink text-white' : 'bg-paper-dim text-ink'
                     }`}
                   >

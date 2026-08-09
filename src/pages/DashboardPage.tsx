@@ -32,11 +32,11 @@ export default function DashboardPage() {
             />
             tripzy
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[14px] font-semibold text-[#4a4460]">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <span className="max-w-[110px] truncate text-[14px] font-semibold text-[#4a4460] sm:max-w-[220px]">
               {currentUser?.displayName || currentUser?.email}
             </span>
-            <Link to="/settings" className="btn-secondary !px-4 !py-2 !text-[13px]">
+            <Link to="/settings" className="btn-secondary shrink-0 !px-4 !py-2 !text-[13px]">
               ⚙️ Settings
             </Link>
           </div>

@@ -166,7 +166,7 @@ export async function deleteTrip(user: User, tripId: string): Promise<boolean> {
 
   const cloudinaryCleanupOk = await deleteCloudinaryAssets(user, tripId, assets)
 
-  const subcollections = ['entries', 'messages', 'expenses']
+  const subcollections = ['entries', 'messages', 'expenses', 'itinerary']
   for (const sub of subcollections) {
     // Reuse the already-fetched snapshot for 'entries' instead of a second read.
     const snap = sub === 'entries' ? entriesSnap : await getDocs(collection(db, TRIPS_COLLECTION, tripId, sub))
