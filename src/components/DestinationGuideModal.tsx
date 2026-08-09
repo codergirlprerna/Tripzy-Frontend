@@ -133,8 +133,10 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
               {activePlaces.length === 0 ? (
                 <p className="py-8 text-center text-[13px] font-medium text-[#7a7590]">
                   {guide.placesError
-                    ? `Couldn't check nearby spots right now (${guide.placesError}). Try again in a moment.`
-                    : `No ${tab === 'attractions' ? 'attractions' : 'food spots'} found nearby in OpenStreetMap's data for this area yet.`}
+                    ? guide.placesError.includes('VITE_GEOAPIFY_API_KEY')
+                      ? "This needs a free Geoapify API key to look up nearby places — sign up at geoapify.com and add VITE_GEOAPIFY_API_KEY to .env."
+                      : `Couldn't check nearby spots right now (${guide.placesError}). Try again in a moment.`
+                    : `No ${tab === 'attractions' ? 'attractions' : 'food spots'} found nearby for this area yet.`}
                 </p>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -145,7 +147,7 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
               )}
 
               <p className="mt-5 border-t-[2px] border-dashed border-ink/15 pt-3 font-mono text-[10.5px] font-semibold text-[#a39fb0]">
-                Pulled from OpenStreetMap — distances are straight-line from {guide.resolvedName}, not walking
+                Pulled from Geoapify — distances are straight-line from {guide.resolvedName}, not walking
                 routes.
               </p>
             </>

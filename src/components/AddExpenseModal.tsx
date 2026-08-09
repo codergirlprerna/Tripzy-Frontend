@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { addExpense } from '@/lib/expenses'
 import { Trip } from '@/types/trip'
+import Spinner from '@/components/Spinner'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'AUD']
 
@@ -144,7 +145,13 @@ export default function AddExpenseModal({ trip, onClose }: Props) {
           </div>
 
           <button type="submit" disabled={submitting} className="btn-primary mt-2 w-full !text-center disabled:opacity-60">
-            {submitting ? 'Saving…' : 'Add expense'}
+            {submitting ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner /> Saving…
+              </span>
+            ) : (
+              'Add expense'
+            )}
           </button>
         </form>
       </div>

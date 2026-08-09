@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import Cropper, { Area } from 'react-easy-crop'
 import { getCroppedImageBlob } from '@/lib/cropImage'
+import Spinner from '@/components/Spinner'
 
 type Props = {
   imageSrc: string
@@ -109,7 +110,13 @@ export default function PhotoEditorModal({
             disabled={processing}
             className="btn-primary flex-1 disabled:opacity-60"
           >
-            {processing ? 'Processing…' : 'Use photo'}
+            {processing ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner /> Processing…
+              </span>
+            ) : (
+              'Use photo'
+            )}
           </button>
         </div>
       </div>

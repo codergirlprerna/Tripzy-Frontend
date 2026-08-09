@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trip, TripRole } from '@/types/trip'
 import { setMemberRole, removeMember } from '@/lib/trips'
 import { useAuth } from '@/context/AuthContext'
+import Spinner from '@/components/Spinner'
 
 type Props = {
   trip: Trip
@@ -62,11 +63,12 @@ export default function MembersModal({ trip, onClose }: Props) {
 
                 {isOwner && member.role !== 'owner' ? (
                   <div className="flex items-center gap-2">
+                    {busyUid === uid && <Spinner />}
                     <select
                       value={member.role}
                       disabled={busyUid === uid}
                       onChange={(e) => handleRoleChange(uid, e.target.value as TripRole)}
-                      className="rounded-lg border-2 border-ink px-2 py-1 text-[12px] font-semibold outline-none"
+                      className="rounded-lg border-2 border-ink px-2 py-1 text-[12px] font-semibold outline-none disabled:opacity-60"
                     >
                       <option value="editor">Editor</option>
                       <option value="viewer">Viewer</option>
@@ -74,7 +76,7 @@ export default function MembersModal({ trip, onClose }: Props) {
                     <button
                       onClick={() => handleRemove(uid)}
                       disabled={busyUid === uid}
-                      className="text-[11px] font-bold text-[#c9403a]"
+                      className="text-[11px] font-bold text-[#c9403a] disabled:opacity-60"
                     >
                       Remove
                     </button>

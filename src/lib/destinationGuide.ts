@@ -2,7 +2,7 @@ import { searchLocation } from '@/lib/geocode'
 
 export type GuidePlace = {
   name: string
-  category: string // e.g. "Museum", "Viewpoint", "Cafe" — derived from OSM tags
+  category: string
   distanceKm: number
 }
 
@@ -13,26 +13,36 @@ export type TripzyGuide = {
   wikiUrl: string | null
   attractions: GuidePlace[]
   food: GuidePlace[]
-  placesError: string | null // set if the Overpass call itself failed — distinguishes "genuinely nothing nearby" from "couldn't check"
+  placesError: string | null // set if the places lookup itself failed — distinguishes "genuinely nothing nearby" from "couldn't check"
 }
 
-const ATTRACTION_LABELS: Record<string, string> = {
-  attraction: 'Attraction',
-  museum: 'Museum',
-  viewpoint: 'Viewpoint',
-  gallery: 'Gallery',
-  artwork: 'Landmark',
-  zoo: 'Zoo',
-  theme_park: 'Theme park',
+const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY
+
+// Geoapify's category taxonomy, mapped to a short display label. Full list:
+// https://apidocs.geoapify.com/docs/places/#categories
+const CATEGORY_LABELS: Record<string, string> = {
+  'tourism.sights': 'Sight',
+  'tourism.attraction': 'Attraction',
+  'entertainment.museum': 'Museum',
+  'natural': 'Natural landmark',
+  'religion': 'Religious site',
+  'catering.restaurant': 'Restaurant',
+  'catering.cafe': 'Cafe',
+  'catering.fast_food': 'Fast food',
+  'catering.bar': 'Bar',
+  'catering.pub': 'Pub',
 }
 
-const FOOD_LABELS: Record<string, string> = {
-  restaurant: 'Restaurant',
-  cafe: 'Cafe',
-  fast_food: 'Fast food',
-  bar: 'Bar',
-  bakery: 'Bakery',
-}
+// Requested at the PARENT level ("tourism", not "tourism.attraction") so
+// Geoapify's own server-side matching returns everything under that umbrella
+// — a narrower request (e.g. only "tourism.attraction") means the server
+// itself never even considers a place tagged more generally, which is a
+// different and earlier problem than the client-side filtering fixed
+// previously. This matters most in less-mapped rural areas, where a place
+// is more likely to have only a broad tag than a specific one.
+const ATTRACTION_CATEGORIES = ['tourism.sights', 'tourism.attraction', 'entertainment.museum', 'natural', 'religion']
+const FOOD_CATEGORIES = ['catering.restaurant', 'catering.cafe', 'catering.fast_food', 'catering.bar', 'catering.pub']
+const REQUEST_CATEGORIES = ['tourism', 'entertainment.museum', 'natural', 'religion', 'catering']
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
@@ -44,84 +54,75 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-// Several independent public Overpass instances, tried in order. The
-// official one (overpass-api.de) is the most commonly used and therefore
-// the most rate-limited; the others are community-run mirrors of the same
-// OpenStreetMap data. Trying more than one matters because a single shared
-// public server being slow, rate-limiting a particular IP, or blocked by a
-// specific network/firewall is a real, common failure mode — not a
-// hypothetical one — and there's no paid API key that fixes "this one
-// server is having a bad day." If ALL of these end up unreliable for your
-// network, that's the point to switch to a paid provider (Google Places,
-// Foursquare) instead of continuing to patch around free-tier flakiness.
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass.openstreetmap.ru/api/interpreter',
-]
-
 /**
- * Overpass is OpenStreetMap's free query API for map data — no key required,
- * but these are shared public servers with no uptime SLA, so this always has
- * to degrade gracefully. Tries each endpoint in OVERPASS_ENDPOINTS in turn,
- * moving on immediately if one times out, errors, or rate-limits.
+ * Geoapify's Places API. Unlike Overpass, this is a normal commercial API
+ * with a real SLA — free tier is 3,000 requests/day, no credit card needed,
+ * sign up at https://myprojects.geoapify.com. Switched to this after every
+ * public Overpass mirror consistently timed out end-to-end on repeated
+ * testing — that pattern (3 independent servers, same result, every time)
+ * means something on the network path is blocking that traffic, which no
+ * amount of retrying or adding more mirrors fixes. A keyed API isn't a
+ * downgrade here — it's what actually routes reliably.
+ *
+ * Requires VITE_GEOAPIFY_API_KEY in .env. Without it, this throws rather
+ * than silently returning nothing, so the failure is loud, not mysterious.
  */
-async function runOverpassQuery(query: string): Promise<{ elements: any[]; error: string | null }> {
-  const attemptErrors: string[] = []
-
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: controller.signal,
-      })
-      clearTimeout(timeout)
-
-      if (!response.ok) {
-        const body = await response.text().catch(() => '')
-        console.warn(`Overpass endpoint ${endpoint} returned ${response.status}:`, body.slice(0, 300))
-        attemptErrors.push(`${endpoint.split('/')[2]}: HTTP ${response.status}`)
-        continue // try the next mirror
-      }
-
-      const data = await response.json()
-      return { elements: data.elements || [], error: null }
-    } catch (err: any) {
-      const reason = err?.name === 'AbortError' ? 'timed out' : err?.message || 'network error'
-      console.warn(`Overpass endpoint ${endpoint} failed:`, reason)
-      attemptErrors.push(`${endpoint.split('/')[2]}: ${reason}`)
-      continue // try the next mirror
-    }
+async function fetchNearbyPlaces(
+  lat: number,
+  lon: number,
+  radiusMeters: number,
+): Promise<{ elements: any[]; error: string | null }> {
+  if (!GEOAPIFY_API_KEY) {
+    return { elements: [], error: 'VITE_GEOAPIFY_API_KEY is not set — see .env.example' }
   }
 
-  // Every endpoint failed — genuinely worth surfacing, not just an empty result.
-  return { elements: [], error: `All map servers unreachable (${attemptErrors.join('; ')})` }
+  const categories = REQUEST_CATEGORIES.join(',')
+  const url =
+    `https://api.geoapify.com/v2/places?categories=${categories}` +
+    `&filter=circle:${lon},${lat},${radiusMeters}` +
+    `&bias=proximity:${lon},${lat}` +
+    `&limit=40&apiKey=${GEOAPIFY_API_KEY}`
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+    const response = await fetch(url, { signal: controller.signal })
+    clearTimeout(timeout)
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      console.warn('Geoapify places request failed:', response.status, body.slice(0, 300))
+      return { elements: [], error: `Geoapify returned ${response.status}` }
+    }
+
+    const data = await response.json()
+    console.info(`Geoapify (radius ${radiusMeters}m) returned ${data.features?.length ?? 0} raw place(s) before category filtering`)
+    return { elements: data.features || [], error: null }
+  } catch (err: any) {
+    const reason = err?.name === 'AbortError' ? 'timed out' : err?.message || 'network error'
+    console.warn('Geoapify places request error:', reason)
+    return { elements: [], error: reason }
+  }
 }
 
-function elementsToPlaces(
-  elements: any[],
-  labels: Record<string, string>,
-  centerLat: number,
-  centerLon: number,
-): GuidePlace[] {
-  return elements
-    .filter((el) => el.tags?.name) // skip unnamed nodes/ways — pure noise for a guide
-    .map((el) => {
-      const tagKey = Object.keys(labels).find((key) => el.tags.tourism === key || el.tags.amenity === key)
-      // Nodes carry lat/lon directly; ways (buildings, areas — common for
-      // restaurants and larger attractions) only get a computed centroid
-      // because we requested `out center` in the query, under el.center.
-      const lat = el.lat ?? el.center?.lat
-      const lon = el.lon ?? el.center?.lon
-      if (lat === undefined || lon === undefined) return null
+function featuresToPlaces(features: any[], wantedCategories: string[], centerLat: number, centerLon: number): GuidePlace[] {
+  // Geoapify categories are hierarchical (e.g. a pizza place may be tagged
+  // "catering.restaurant.pizza" without also listing the parent
+  // "catering.restaurant" separately) — matching only exact strings against
+  // our requested top-level categories silently drops anything tagged more
+  // specifically than that. Prefix matching catches both.
+  const matches = (category: string, wanted: string) => category === wanted || category.startsWith(wanted + '.')
+
+  return features
+    .filter((f) => f.properties?.name && f.properties?.categories?.some((c: string) => wantedCategories.some((w) => matches(c, w))))
+    .map((f) => {
+      const matchedCategory = f.properties.categories.find((c: string) => wantedCategories.some((w) => matches(c, w)))
+      const wantedMatch = wantedCategories.find((w) => matches(matchedCategory, w))
+      const [lon, lat] = f.geometry?.coordinates || [null, null]
+      if (lat === null || lon === null) return null
       return {
-        name: el.tags.name as string,
-        category: (tagKey && labels[tagKey]) || 'Nearby spot',
+        name: f.properties.name as string,
+        category: CATEGORY_LABELS[wantedMatch || ''] || 'Nearby spot',
         distanceKm: haversineKm(centerLat, centerLon, lat, lon),
       }
     })
@@ -161,33 +162,36 @@ export async function fetchTripzyGuide(location: string): Promise<TripzyGuide | 
   if (candidates.length === 0) return null
   const { latitude, longitude, displayName } = candidates[0]
 
-  const radiusMeters = 6000
-  const overpassQuery = `
-    [out:json][timeout:20];
-    (
-      node["tourism"~"attraction|museum|viewpoint|gallery|artwork|zoo|theme_park"](around:${radiusMeters},${latitude},${longitude});
-      way["tourism"~"attraction|museum|viewpoint|gallery|artwork|zoo|theme_park"](around:${radiusMeters},${latitude},${longitude});
-      node["amenity"~"restaurant|cafe|fast_food|bar|bakery"](around:${radiusMeters},${latitude},${longitude});
-      way["amenity"~"restaurant|cafe|fast_food|bar|bakery"](around:${radiusMeters},${latitude},${longitude});
-    );
-    out center 80;
-  `
+  // Starts tight (good for dense cities, keeps results actually "nearby")
+  // and widens only if that comes back empty — a rural or small-town
+  // destination may have nothing tagged within 6km but plenty within 25km,
+  // and there's no way to know which case it is without trying.
+  const radiusSteps = [6000, 15000, 30000]
+  let elements: any[] = []
+  let placesError: string | null = null
 
-  const [{ elements, error: placesError }, wiki] = await Promise.all([
-    runOverpassQuery(overpassQuery),
-    fetchWikiIntro(searchTerm),
-  ])
+  const wikiPromise = fetchWikiIntro(searchTerm)
 
-  const attractionElements = elements.filter((el) => el.tags?.tourism)
-  const foodElements = elements.filter((el) => el.tags?.amenity)
+  for (const radiusMeters of radiusSteps) {
+    const result = await fetchNearbyPlaces(latitude, longitude, radiusMeters)
+    placesError = result.error
+    if (result.error) break // a real failure (bad key, network) — widening the radius won't fix that, stop and surface it
+    if (result.elements.length > 0) {
+      elements = result.elements
+      break
+    }
+    // else: genuinely zero raw results at this radius — try the next, wider step
+  }
+
+  const wiki = await wikiPromise
 
   return {
     resolvedName: displayName.split(',').slice(0, 2).join(','),
     intro: wiki?.intro ?? null,
     introImageUrl: wiki?.imageUrl ?? null,
     wikiUrl: wiki?.url ?? null,
-    attractions: elementsToPlaces(attractionElements, ATTRACTION_LABELS, latitude, longitude).slice(0, 8),
-    food: elementsToPlaces(foodElements, FOOD_LABELS, latitude, longitude).slice(0, 8),
+    attractions: featuresToPlaces(elements, ATTRACTION_CATEGORIES, latitude, longitude).slice(0, 8),
+    food: featuresToPlaces(elements, FOOD_CATEGORIES, latitude, longitude).slice(0, 8),
     placesError,
   }
 }

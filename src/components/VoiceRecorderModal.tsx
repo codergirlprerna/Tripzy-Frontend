@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import Spinner from '@/components/Spinner'
 
 type Props = {
   onSave: (audioBlob: Blob, transcript: string) => Promise<void>
@@ -157,7 +158,13 @@ export default function VoiceRecorderModal({ onSave, onClose }: Props) {
                 Re-record
               </button>
               <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-60">
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner /> Saving…
+                  </span>
+                ) : (
+                  'Save'
+                )}
               </button>
             </div>
           </div>

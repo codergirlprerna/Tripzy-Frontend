@@ -1,17 +1,25 @@
+import { useState } from 'react'
 import { Message } from '@/types/message'
 import { voteOnPoll } from '@/lib/chat'
 import { useAuth } from '@/context/AuthContext'
+import Spinner from '@/components/Spinner'
 
 export default function PollBubble({ message }: { message: Message }) {
   const { currentUser } = useAuth()
+  const [votingFor, setVotingFor] = useState<string | null>(null)
   const votes = message.pollVotes || {}
   const options = message.pollOptions || []
   const totalVotes = Object.keys(votes).length
   const myVote = currentUser ? votes[currentUser.uid] : undefined
 
   async function handleVote(optionId: string) {
-    if (!currentUser) return
-    await voteOnPoll(message.tripId, message.id, currentUser.uid, optionId)
+    if (!currentUser || votingFor) return
+    setVotingFor(optionId)
+    try {
+      await voteOnPoll(message.tripId, message.id, currentUser.uid, optionId)
+    } finally {
+      setVotingFor(null)
+    }
   }
 
   return (
@@ -28,7 +36,8 @@ export default function PollBubble({ message }: { message: Message }) {
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
-              className={`relative overflow-hidden rounded-lg border-2 border-ink px-3 py-2 text-left text-[13px] font-semibold transition-colors ${
+              disabled={votingFor !== null}
+              className={`relative overflow-hidden rounded-lg border-2 border-ink px-3 py-2 text-left text-[13px] font-semibold transition-colors disabled:cursor-wait ${
                 isMine ? 'bg-lime' : 'bg-white hover:bg-paper-dim'
               }`}
             >
@@ -37,8 +46,8 @@ export default function PollBubble({ message }: { message: Message }) {
                 style={{ width: `${pct}%` }}
               />
               <div className="relative flex items-center justify-between gap-2">
-                <span>
-                  {isMine && '✓ '}
+                <span className="inline-flex items-center gap-1.5">
+                  {votingFor === option.id ? <Spinner size={12} /> : isMine && '✓ '}
                   {option.text}
                 </span>
                 <span className="font-mono text-[11px] text-[#7a7590]">{pct}%</span>

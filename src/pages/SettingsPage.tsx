@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { getUserPlan, countOwnedTrips, PLAN_LIMITS, Plan } from '@/lib/users'
+import Spinner from '@/components/Spinner'
 
 const PLAN_LABELS: Record<Plan, string> = {
   free: 'Free',
@@ -15,6 +16,7 @@ export default function SettingsPage() {
   const [plan, setPlan] = useState<Plan>('free')
   const [ownedTrips, setOwnedTrips] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
     if (!currentUser) return
@@ -28,8 +30,14 @@ export default function SettingsPage() {
   }, [currentUser])
 
   async function handleLogOut() {
-    await logOut()
-    navigate('/')
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      await logOut()
+      navigate('/')
+    } catch {
+      setLoggingOut(false)
+    }
   }
 
   const limits = PLAN_LIMITS[plan]
@@ -76,7 +84,9 @@ export default function SettingsPage() {
           </div>
 
           {loading ? (
-            <div className="text-[13.5px] font-medium text-[#4a4460]">Loading usage…</div>
+            <div className="inline-flex items-center gap-2 text-[13.5px] font-medium text-[#4a4460]">
+              <Spinner /> Loading usage…
+            </div>
           ) : (
             <div className="flex flex-col gap-2 text-[13.5px] font-medium text-[#4a4460]">
               <div className="flex justify-between">
@@ -109,8 +119,14 @@ export default function SettingsPage() {
 
         {/* Danger zone */}
         <div className="sticker-card p-6 shadow-hard-sm">
-          <button onClick={handleLogOut} className="btn-secondary w-full !text-center">
-            Log out
+          <button onClick={handleLogOut} disabled={loggingOut} className="btn-secondary w-full !text-center disabled:opacity-60">
+            {loggingOut ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner /> Logging out…
+              </span>
+            ) : (
+              'Log out'
+            )}
           </button>
         </div>
       </main>
