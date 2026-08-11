@@ -11,6 +11,7 @@ export type TripzyGuide = {
   intro: string | null
   introImageUrl: string | null
   wikiUrl: string | null
+  knownFor: string | null
   attractions: GuidePlace[]
   food: GuidePlace[]
   placesError: string | null // set if the places lookup itself failed — distinguishes "genuinely nothing nearby" from "couldn't check"
@@ -33,16 +34,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   'catering.pub': 'Pub',
 }
 
-// Requested at the PARENT level ("tourism", not "tourism.attraction") so
-// Geoapify's own server-side matching returns everything under that umbrella
-// — a narrower request (e.g. only "tourism.attraction") means the server
-// itself never even considers a place tagged more generally, which is a
-// different and earlier problem than the client-side filtering fixed
-// previously. This matters most in less-mapped rural areas, where a place
-// is more likely to have only a broad tag than a specific one.
+// Deliberately NOT requesting the bare "tourism" or "catering" parent
+// categories anymore — that was pulling in hotels, lodging, and tourist
+// info points (anything under the huge "tourism" umbrella) mixed in with
+// genuine attractions, which is why junk entries like plain numbers
+// ("2624", "3230" — almost certainly unnamed accommodation/address points)
+// were showing up. Naming the specific subcategories keeps results
+// actually meaningful.
 const ATTRACTION_CATEGORIES = ['tourism.sights', 'tourism.attraction', 'entertainment.museum', 'natural', 'religion']
 const FOOD_CATEGORIES = ['catering.restaurant', 'catering.cafe', 'catering.fast_food', 'catering.bar', 'catering.pub']
-const REQUEST_CATEGORIES = ['tourism', 'entertainment.museum', 'natural', 'religion', 'catering']
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
@@ -66,22 +66,31 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
  *
  * Requires VITE_GEOAPIFY_API_KEY in .env. Without it, this throws rather
  * than silently returning nothing, so the failure is loud, not mysterious.
+ *
+ * Takes an explicit category list rather than one shared combined request —
+ * a single request mixing broad categories (tourism has MANY more tagged
+ * points than catering does in most cities) meant tourism results could
+ * fill the entire `limit` before any food results were even considered,
+ * effectively starving food out of the response regardless of how much
+ * real food data existed. Two separate requests, each with their own
+ * dedicated limit, guarantees food gets its own quota.
  */
 async function fetchNearbyPlaces(
   lat: number,
   lon: number,
   radiusMeters: number,
+  categories: string[],
+  limit: number,
 ): Promise<{ elements: any[]; error: string | null }> {
   if (!GEOAPIFY_API_KEY) {
     return { elements: [], error: 'VITE_GEOAPIFY_API_KEY is not set — see .env.example' }
   }
 
-  const categories = REQUEST_CATEGORIES.join(',')
   const url =
-    `https://api.geoapify.com/v2/places?categories=${categories}` +
+    `https://api.geoapify.com/v2/places?categories=${categories.join(',')}` +
     `&filter=circle:${lon},${lat},${radiusMeters}` +
     `&bias=proximity:${lon},${lat}` +
-    `&limit=40&apiKey=${GEOAPIFY_API_KEY}`
+    `&limit=${limit}&apiKey=${GEOAPIFY_API_KEY}`
 
   try {
     const controller = new AbortController()
@@ -96,7 +105,7 @@ async function fetchNearbyPlaces(
     }
 
     const data = await response.json()
-    console.info(`Geoapify (radius ${radiusMeters}m) returned ${data.features?.length ?? 0} raw place(s) before category filtering`)
+    console.info(`Geoapify [${categories.join(',')}] (radius ${radiusMeters}m) returned ${data.features?.length ?? 0} raw place(s)`)
     return { elements: data.features || [], error: null }
   } catch (err: any) {
     const reason = err?.name === 'AbortError' ? 'timed out' : err?.message || 'network error'
@@ -162,36 +171,38 @@ export async function fetchTripzyGuide(location: string): Promise<TripzyGuide | 
   if (candidates.length === 0) return null
   const { latitude, longitude, displayName } = candidates[0]
 
-  // Starts tight (good for dense cities, keeps results actually "nearby")
-  // and widens only if that comes back empty — a rural or small-town
-  // destination may have nothing tagged within 6km but plenty within 25km,
-  // and there's no way to know which case it is without trying.
-  const radiusSteps = [6000, 15000, 30000]
-  let elements: any[] = []
-  let placesError: string | null = null
+  // Two independent requests, each with its own limit — this is the actual
+  // fix for food showing 0 even in dense cities: one shared request meant
+  // the (usually much larger) tourism result set could fill the entire
+  // response before catering results were ever considered.
+  const [attractionsResult, foodResult, wiki] = await Promise.all([
+    fetchNearbyPlaces(latitude, longitude, 40000, ATTRACTION_CATEGORIES, 20),
+    fetchNearbyPlaces(latitude, longitude, 40000, FOOD_CATEGORIES, 20),
+    fetchWikiIntro(searchTerm),
+  ])
 
-  const wikiPromise = fetchWikiIntro(searchTerm)
+  // Surfaced only if BOTH requests failed — one succeeding means the guide
+  // still has something useful to show, so a single transient failure on
+  // one category shouldn't block the whole feature.
+  const placesError = attractionsResult.error && foodResult.error ? attractionsResult.error : null
 
-  for (const radiusMeters of radiusSteps) {
-    const result = await fetchNearbyPlaces(latitude, longitude, radiusMeters)
-    placesError = result.error
-    if (result.error) break // a real failure (bad key, network) — widening the radius won't fix that, stop and surface it
-    if (result.elements.length > 0) {
-      elements = result.elements
-      break
-    }
-    // else: genuinely zero raw results at this radius — try the next, wider step
-  }
+  const attractions = featuresToPlaces(attractionsResult.elements, ATTRACTION_CATEGORIES, latitude, longitude).slice(0, 8)
+  const food = featuresToPlaces(foodResult.elements, FOOD_CATEGORIES, latitude, longitude).slice(0, 8)
 
-  const wiki = await wikiPromise
+  // A short "known for" teaser built from the closest real attractions
+  // found — genuinely more useful to a stranger than an encyclopedia
+  // paragraph, and it's free: no new API, just surfacing data already
+  // fetched in a more scannable way.
+  const knownFor = attractions.length > 0 ? attractions.slice(0, 3).map((a) => a.name).join(', ') : null
 
   return {
     resolvedName: displayName.split(',').slice(0, 2).join(','),
     intro: wiki?.intro ?? null,
     introImageUrl: wiki?.imageUrl ?? null,
     wikiUrl: wiki?.url ?? null,
-    attractions: featuresToPlaces(elements, ATTRACTION_CATEGORIES, latitude, longitude).slice(0, 8),
-    food: featuresToPlaces(elements, FOOD_CATEGORIES, latitude, longitude).slice(0, 8),
+    knownFor,
+    attractions,
+    food,
     placesError,
   }
 }

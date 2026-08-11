@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Suspense, lazy } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { getTrip, subscribeToTripEntries, addPhotoEntry, addVoiceEntry } from '@/lib/entries'
@@ -12,8 +12,13 @@ import { ItineraryItem } from '@/types/itinerary'
 import EntryCard from '@/components/EntryCard'
 import VoiceEntryCard from '@/components/VoiceEntryCard'
 import VoiceRecorderModal from '@/components/VoiceRecorderModal'
-import RecapModal from '@/components/RecapModal'
-import TripMap from '@/components/TripMap'
+// Lazy-loaded because they pull in genuinely heavy libraries (Leaflet for
+// the map, jsPDF + html2canvas for the recap export) that most visits to a
+// trip never touch — someone just scrolling photos or chatting shouldn't
+// pay for either. Only downloads when the Map tab or "View recap" is
+// actually clicked.
+const RecapModal = lazy(() => import('@/components/RecapModal'))
+const TripMap = lazy(() => import('@/components/TripMap'))
 import ExpensesView from '@/components/ExpensesView'
 import AddExpenseModal from '@/components/AddExpenseModal'
 import ChatPanel from '@/components/ChatPanel'
@@ -27,6 +32,7 @@ import AIStoryModal from '@/components/AIStoryModal'
 import DeleteTripModal from '@/components/DeleteTripModal'
 import ItineraryView from '@/components/ItineraryView'
 import AddItineraryItemModal from '@/components/AddItineraryItemModal'
+import { MapPin } from 'lucide-react'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -215,8 +221,8 @@ export default function TripDetailPage() {
               ← Back to trips
             </button>
             <h1 className="font-display text-[26px] font-extrabold">{trip.title}</h1>
-            <div className="mt-1 text-[14px] font-medium text-[#4a4460]">
-              📍 {trip.location} · {trip.startDate} → {trip.endDate}
+            <div className="mt-1 flex items-center gap-1.5 text-[14px] font-medium text-[#4a4460]">
+              <MapPin size={14} className="shrink-0" /> {trip.location} · {trip.startDate} → {trip.endDate}
             </div>
             {trip.description && (
               <p className="mt-2 max-w-[500px] text-[13.5px] font-medium text-[#4a4460]">{trip.description}</p>
@@ -373,7 +379,15 @@ export default function TripDetailPage() {
               </div>
             )
           ) : view === 'map' ? (
-            <TripMap entries={entries} />
+            <Suspense
+              fallback={
+                <div className="flex h-[400px] items-center justify-center">
+                  <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-ink border-t-transparent" />
+                </div>
+              }
+            >
+              <TripMap entries={entries} />
+            </Suspense>
           ) : view === 'expenses' ? (
             <ExpensesView trip={trip} expenses={expenses} />
           ) : view === 'itinerary' ? (
@@ -392,7 +406,11 @@ export default function TripDetailPage() {
         </div>
       </div>
 
-      {showRecap && <RecapModal trip={trip} entries={entries} onClose={() => setShowRecap(false)} />}
+      {showRecap && (
+        <Suspense fallback={null}>
+          <RecapModal trip={trip} entries={entries} onClose={() => setShowRecap(false)} />
+        </Suspense>
+      )}
       {showAddExpense && <AddExpenseModal trip={trip} onClose={() => setShowAddExpense(false)} />}
       {showMembers && <MembersModal trip={trip} onClose={() => setShowMembers(false)} />}
       {showGuide && <DestinationGuideModal location={trip.location} onClose={() => setShowGuide(false)} />}

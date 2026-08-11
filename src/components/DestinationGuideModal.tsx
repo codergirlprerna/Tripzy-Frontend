@@ -88,6 +88,13 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
             </div>
           ) : (
             <>
+              {guide.knownFor && (
+                <div className="mb-4 rounded-xl border-[2px] border-ink bg-lime/40 px-4 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#4a4460]">Known for</p>
+                  <p className="mt-0.5 text-[14px] font-bold text-ink">{guide.knownFor}</p>
+                </div>
+              )}
+
               {guide.intro && (
                 <div className="mb-5">
                   {guide.introImageUrl && (
