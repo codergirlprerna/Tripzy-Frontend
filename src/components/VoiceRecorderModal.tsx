@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import Spinner from '@/components/Spinner'
+import { Mic, Square } from 'lucide-react'
 
 type Props = {
   onSave: (audioBlob: Blob, transcript: string) => Promise<void>
@@ -111,11 +112,11 @@ export default function VoiceRecorderModal({ onSave, onClose }: Props) {
           <div className="flex flex-col items-center gap-5 py-6">
             <button
               onClick={recording ? stopRecording : startRecording}
-              className={`flex h-20 w-20 items-center justify-center rounded-full border-[2.5px] border-ink text-[28px] shadow-hard-sm ${
+              className={`flex h-20 w-20 items-center justify-center rounded-full border-[2.5px] border-ink shadow-hard-sm ${
                 recording ? 'animate-pulse bg-pink' : 'bg-white'
               }`}
             >
-              {recording ? '⏹️' : '🎤'}
+              {recording ? <Square size={26} /> : <Mic size={26} />}
             </button>
             <p className="text-[13.5px] font-semibold text-[#4a4460]">
               {recording ? 'Recording… tap to stop' : 'Tap to start recording'}

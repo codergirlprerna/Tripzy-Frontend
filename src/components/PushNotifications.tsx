@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { enablePushNotifications, getPushPermissionState, subscribeToForegroundPush } from '@/lib/push'
+import { Bell } from 'lucide-react'
 
 const DISMISS_KEY = 'tripzy:pushBannerDismissed'
 
@@ -49,7 +50,7 @@ export default function PushNotifications() {
       {showBanner && (
         <div className="fixed inset-x-0 bottom-0 z-[90] border-t-[3px] border-ink bg-lime px-5 py-3.5 sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-[380px] sm:rounded-2xl sm:border-[2.5px] sm:shadow-hard">
           <div className="flex items-start gap-3">
-            <span className="text-[20px]">🔔</span>
+            <Bell size={20} className="shrink-0" />
             <div className="flex-1">
               <p className="text-[13.5px] font-bold leading-snug">Turn on notifications</p>
               <p className="mt-0.5 text-[12.5px] font-medium text-[#3a3650]">

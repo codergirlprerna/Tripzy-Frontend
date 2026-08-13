@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trip } from '@/types/trip'
 import { ItineraryItem } from '@/types/itinerary'
 import { deleteItineraryItem } from '@/lib/itinerary'
+import { MapPin } from 'lucide-react'
 
 type Props = {
   trip: Trip
@@ -88,7 +89,9 @@ export default function ItineraryView({ trip, items, canEdit, onEditItem }: Prop
                 <div>
                   <div className="font-display text-[15px] font-extrabold">{item.title}</div>
                   {item.locationName && (
-                    <div className="mt-0.5 text-[12px] font-medium text-[#4a4460]">📍 {item.locationName}</div>
+                    <div className="mt-0.5 flex items-center gap-1 text-[12px] font-medium text-[#4a4460]">
+                      <MapPin size={11} className="shrink-0" /> {item.locationName}
+                    </div>
                   )}
                   {item.notes && <div className="mt-1 text-[12.5px] font-medium text-[#4a4460]">{item.notes}</div>}
                   <div className="mt-1 font-mono text-[10.5px] font-semibold text-[#a39fb0]">

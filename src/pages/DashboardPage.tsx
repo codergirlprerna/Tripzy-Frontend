@@ -5,6 +5,7 @@ import { subscribeToUserTrips } from '@/lib/trips'
 import { Trip } from '@/types/trip'
 import TripCard from '@/components/TripCard'
 import CreateTripModal from '@/components/CreateTripModal'
+import { Settings, Plane } from 'lucide-react'
 
 export default function DashboardPage() {
   const { currentUser } = useAuth()
@@ -36,8 +37,8 @@ export default function DashboardPage() {
             <span className="max-w-[110px] truncate text-[14px] font-semibold text-[#4a4460] sm:max-w-[220px]">
               {currentUser?.displayName || currentUser?.email}
             </span>
-            <Link to="/settings" className="btn-secondary shrink-0 !px-4 !py-2 !text-[13px]">
-              ⚙️ Settings
+            <Link to="/settings" className="btn-secondary inline-flex shrink-0 items-center gap-1.5 !px-4 !py-2 !text-[13px]">
+              <Settings size={14} /> Settings
             </Link>
           </div>
         </div>
@@ -48,8 +49,8 @@ export default function DashboardPage() {
           <div className="py-20 text-center text-[14px] font-semibold text-[#4a4460]">Loading your trips…</div>
         ) : trips.length === 0 ? (
           <div className="mx-auto max-w-[420px] py-16 text-center">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-[2.5px] border-ink bg-lime text-3xl">
-              ✈️
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-[2.5px] border-ink bg-lime">
+              <Plane size={30} />
             </div>
             <h1 className="mb-2 font-display text-[26px] font-extrabold">No trips yet</h1>
             <p className="mb-7 text-[14.5px] font-medium text-[#4a4460]">

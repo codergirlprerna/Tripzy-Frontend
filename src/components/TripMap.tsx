@@ -3,8 +3,9 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Entry } from '@/types/entry'
 import { searchLocation } from '@/lib/geocode'
-import { fetchRoute, TravelProfile } from '@/lib/routing'
+import { fetchRoute } from '@/lib/routing'
 import DestinationGuideModal from '@/components/DestinationGuideModal'
+import { Compass, Navigation, MapPin, Plane, Car } from 'lucide-react'
 
 type Props = {
   entries: Entry[]
@@ -104,7 +105,6 @@ export default function TripMap({ entries }: Props) {
   const [showDirections, setShowDirections] = useState(false)
   const [fromQuery, setFromQuery] = useState('')
   const [toQuery, setToQuery] = useState('')
-  const [profile, setProfile] = useState<TravelProfile>('driving')
   const [directionsLoading, setDirectionsLoading] = useState(false)
   const [directionsError, setDirectionsError] = useState('')
   const [directionsInfo, setDirectionsInfo] = useState<{ distanceKm: number; durationMin: number; destLat: number; destLon: number; destName: string } | null>(null)
@@ -165,7 +165,7 @@ export default function TripMap({ entries }: Props) {
       // the points are too far apart to route sensibly (e.g. different
       // continents), so the map never ends up with nothing connecting the
       // stops just because routing failed.
-      const route = points.length >= 2 ? await fetchRoute(points, 'driving') : null
+      const route = points.length >= 2 ? await fetchRoute(points) : null
       if (cancelled || !map) return
 
       if (route) {
@@ -296,7 +296,7 @@ export default function TripMap({ entries }: Props) {
 
       const from = fromResults[0]
       const to = toResults[0]
-      const route = await fetchRoute([[from.latitude, from.longitude], [to.latitude, to.longitude]], profile)
+      const route = await fetchRoute([[from.latitude, from.longitude], [to.latitude, to.longitude]])
 
       const newLayers: (L.Polyline | L.Marker)[] = []
 
@@ -360,17 +360,23 @@ export default function TripMap({ entries }: Props) {
       {lastSearchedPlace && !searchError && (
         <button
           onClick={() => setGuideLocation(lastSearchedPlace)}
-          className="mb-2 block text-[11.5px] font-bold text-[#4a4460] underline"
+          className="mb-2 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#4a4460] underline"
         >
-          🧭 See nearby attractions & food here
+          <Compass size={12} /> See nearby attractions & food here
         </button>
       )}
 
       <button
         onClick={() => setShowDirections(!showDirections)}
-        className="mb-3 text-[12.5px] font-bold text-[#4a4460] underline"
+        className="mb-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-[#4a4460] underline"
       >
-        {showDirections ? 'Hide directions' : '🧭 Get directions between two places'}
+        {showDirections ? (
+          'Hide directions'
+        ) : (
+          <>
+            <Navigation size={13} /> Get directions between two places
+          </>
+        )}
       </button>
 
       {showDirections && (
@@ -390,26 +396,23 @@ export default function TripMap({ entries }: Props) {
               placeholder="To…"
               className="rounded-full border-2 border-ink bg-white px-4 py-2 text-[13px] font-medium outline-none"
             />
+            <p className="font-mono text-[10px] font-semibold text-[#a39fb0]">
+              Driving directions only — the free routing service used here doesn't have real walking/cycling data,
+              so those aren't offered rather than show wrong numbers.
+            </p>
             <div className="flex items-center gap-2">
-              <div className="flex overflow-hidden rounded-full border-2 border-ink">
-                {(['driving', 'walking', 'cycling'] as TravelProfile[]).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setProfile(p)}
-                    className={`px-3 py-1.5 text-[15px] ${profile === p ? 'bg-ink text-white' : 'bg-white text-ink'}`}
-                    title={p}
-                  >
-                    {p === 'driving' ? '🚗' : p === 'walking' ? '🚶' : '🚴'}
-                  </button>
-                ))}
-              </div>
               <button
                 type="submit"
                 disabled={directionsLoading}
-                className="btn-primary flex-1 !py-2 !text-[13px] disabled:opacity-60"
+                className="btn-primary inline-flex flex-1 items-center justify-center gap-1.5 !py-2 !text-[13px] disabled:opacity-60"
               >
-                {directionsLoading ? 'Routing…' : 'Get route'}
+                {directionsLoading ? (
+                  'Routing…'
+                ) : (
+                  <>
+                    <Car size={14} /> Get route
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -438,9 +441,9 @@ export default function TripMap({ entries }: Props) {
               </p>
               <button
                 onClick={() => setGuideLocation(directionsInfo.destName)}
-                className="mt-2 text-[11.5px] font-bold text-[#4a4460] underline"
+                className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-bold text-[#4a4460] underline"
               >
-                🧭 See nearby attractions & food at this destination
+                <Compass size={12} /> See nearby attractions & food at this destination
               </button>
             </div>
           )}
@@ -468,15 +471,21 @@ export default function TripMap({ entries }: Props) {
               Satellite
             </button>
           </div>
-          <button onClick={handleLocateMe} disabled={locating} className="btn-secondary !px-4 !py-1.5 !text-[12px] disabled:opacity-60">
-            {locating ? 'Locating…' : '📍 Locate me'}
+          <button onClick={handleLocateMe} disabled={locating} className="btn-secondary inline-flex items-center gap-1 !px-4 !py-1.5 !text-[12px] disabled:opacity-60">
+            {locating ? (
+              'Locating…'
+            ) : (
+              <>
+                <MapPin size={13} /> Locate me
+              </>
+            )}
           </button>
           <button
             onClick={handleFlyover}
             disabled={locatedEntries.length === 0}
-            className="btn-secondary !px-4 !py-1.5 !text-[12px] disabled:opacity-50"
+            className="btn-secondary inline-flex items-center gap-1 !px-4 !py-1.5 !text-[12px] disabled:opacity-50"
           >
-            ✈️ Fly through route
+            <Plane size={13} /> Fly through route
           </button>
         </div>
       </div>

@@ -32,7 +32,7 @@ import AIStoryModal from '@/components/AIStoryModal'
 import DeleteTripModal from '@/components/DeleteTripModal'
 import ItineraryView from '@/components/ItineraryView'
 import AddItineraryItemModal from '@/components/AddItineraryItemModal'
-import { MapPin } from 'lucide-react'
+import { MapPin, Users, Compass, Sparkles, Trash2, Mic } from 'lucide-react'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -229,9 +229,9 @@ export default function TripDetailPage() {
             )}
             <button
               onClick={() => setShowMembers(true)}
-              className="mt-2 font-mono text-[11px] font-semibold text-[#7a7590] underline"
+              className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-[#7a7590] underline"
             >
-              👯 {trip.memberIds.length} {trip.memberIds.length === 1 ? 'person' : 'people'} on this trip
+              <Users size={12} /> {trip.memberIds.length} {trip.memberIds.length === 1 ? 'person' : 'people'} on this trip
             </button>
             <div className="mt-3 flex flex-wrap gap-2">
               <TripCountdown startDate={trip.startDate} endDate={trip.endDate} />
@@ -241,11 +241,11 @@ export default function TripDetailPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <NotificationBell tripId={trip.id} />
-            <button onClick={() => setShowGuide(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
-              🧭 Tripzy Guide
+            <button onClick={() => setShowGuide(true)} className="btn-secondary inline-flex items-center gap-1.5 !px-4 !py-3 !text-[14px]">
+              <Compass size={15} /> Tripzy Guide
             </button>
-            <button onClick={() => setShowAIStory(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
-              ✨ AI story
+            <button onClick={() => setShowAIStory(true)} className="btn-secondary inline-flex items-center gap-1.5 !px-4 !py-3 !text-[14px]">
+              <Sparkles size={15} /> AI story
             </button>
             <button onClick={handleCopyInvite} className="btn-secondary !px-5 !py-3 !text-[14px]">
               {copied ? 'Link copied!' : '+ Invite'}
@@ -258,15 +258,15 @@ export default function TripDetailPage() {
                 onClick={() => setShowDeleteTrip(true)}
                 aria-label="Delete trip"
                 title="Delete trip"
-                className="rounded-full border-[2.5px] border-ink !px-4 !py-3 text-[14px] font-bold text-[#c0325f] shadow-hard-sm transition-transform duration-150 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                className="flex items-center justify-center rounded-full border-[2.5px] border-ink !px-4 !py-3 text-[#c0325f] shadow-hard-sm transition-transform duration-150 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
               >
-                🗑️
+                <Trash2 size={15} />
               </button>
             )}
             {canEdit && (
               <>
-                <button onClick={() => setShowVoiceRecorder(true)} className="btn-secondary !px-4 !py-3 !text-[14px]">
-                  🎤 Voice note
+                <button onClick={() => setShowVoiceRecorder(true)} className="btn-secondary inline-flex items-center gap-1.5 !px-4 !py-3 !text-[14px]">
+                  <Mic size={15} /> Voice note
                 </button>
                 <input
                   ref={fileInputRef}

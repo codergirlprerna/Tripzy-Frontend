@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchLocation, reverseGeocode, LocationResult } from '@/lib/geocode'
+import { MapPin } from 'lucide-react'
 
 type Props = {
   onSelect: (location: LocationResult) => void
@@ -69,9 +70,15 @@ export default function LocationPicker({ onSelect, placeholder }: Props) {
           type="button"
           onClick={handleUseMyLocation}
           disabled={locating}
-          className="btn-secondary shrink-0 !px-3 !py-2 !text-[12px] disabled:opacity-60"
+          className="btn-secondary inline-flex shrink-0 items-center gap-1 !px-3 !py-2 !text-[12px] disabled:opacity-60"
         >
-          {locating ? '…' : '📍 My Location'}
+          {locating ? (
+            '…'
+          ) : (
+            <>
+              <MapPin size={13} /> My Location
+            </>
+          )}
         </button>
       </div>
 
