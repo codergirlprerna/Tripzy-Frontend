@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getQueuedUploads, removeQueuedUpload, getQueuedCount } from '@/lib/offlineQueue'
 import { addPhotoEntry, addVoiceEntry } from '@/lib/entries'
+import { WifiOff, Loader2, CheckCircle2 } from 'lucide-react'
 
 export default function OfflineSyncBanner() {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
@@ -71,12 +72,18 @@ export default function OfflineSyncBanner() {
       }`}
     >
       {!isOnline ? (
-        <span>📡 You're offline — new photos and voice notes will queue and send automatically once you're back.</span>
+        <span className="flex items-center gap-1.5">
+          <WifiOff size={14} /> You're offline — new photos and voice notes will queue and send automatically once
+          you're back.
+        </span>
       ) : syncing ? (
-        <span>⏳ Syncing {pendingCount} queued upload{pendingCount === 1 ? '' : 's'}…</span>
+        <span className="flex items-center gap-1.5">
+          <Loader2 size={14} className="animate-spin" /> Syncing {pendingCount} queued upload
+          {pendingCount === 1 ? '' : 's'}…
+        </span>
       ) : (
-        <span>
-          ✅ Back online — {pendingCount} upload{pendingCount === 1 ? '' : 's'} pending.{' '}
+        <span className="flex items-center gap-1.5">
+          <CheckCircle2 size={14} /> Back online — {pendingCount} upload{pendingCount === 1 ? '' : 's'} pending.{' '}
           <button onClick={syncQueue} className="underline">
             Sync now
           </button>

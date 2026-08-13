@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { Trip } from '@/types/trip'
 import DeleteTripModal from '@/components/DeleteTripModal'
+import { MapPin, Trash2 } from 'lucide-react'
 
 function timeAgo(timestamp: number) {
   const diffMs = Date.now() - timestamp
@@ -29,7 +30,9 @@ export default function TripCard({ trip }: { trip: Trip }) {
         <div className="h-[140px]" style={{ background: trip.coverColor }} />
         <div className="p-5">
           <h3 className="mb-1.5 font-display text-[17px] font-extrabold">{trip.title}</h3>
-          <div className="mb-1 text-[13px] font-medium text-[#4a4460]">📍 {trip.location}</div>
+          <div className="mb-1 flex items-center gap-1 text-[13px] font-medium text-[#4a4460]">
+            <MapPin size={12} className="shrink-0" /> {trip.location}
+          </div>
           <div className="font-mono text-[11px] text-[#7a7590]">Created {timeAgo(trip.createdAt)}</div>
         </div>
       </Link>
@@ -43,9 +46,9 @@ export default function TripCard({ trip }: { trip: Trip }) {
           }}
           aria-label="Delete trip"
           title="Delete trip"
-          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 border-ink bg-white text-[13px] opacity-0 shadow-hard-sm transition-opacity group-hover:opacity-100"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 border-ink bg-white opacity-0 shadow-hard-sm transition-opacity group-hover:opacity-100"
         >
-          🗑️
+          <Trash2 size={13} />
         </button>
       )}
 

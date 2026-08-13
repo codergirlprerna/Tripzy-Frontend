@@ -1,4 +1,5 @@
 import { useReveal } from '@/hooks/useReveal'
+import { Sparkle } from 'lucide-react'
 
 const RECAP_POINTS = [
   'Auto-picked highlight photos, no sorting',
@@ -39,7 +40,7 @@ export default function Recap() {
               <ul className="mt-6 flex flex-col gap-3">
                 {RECAP_POINTS.map((point) => (
                   <li key={point} className="flex gap-3 text-[14px] font-medium text-white/88 sm:text-[14.5px]">
-                    <span className="text-peach">✦</span>
+                    <Sparkle size={15} className="mt-0.5 shrink-0 text-peach" />
                     {point}
                   </li>
                 ))}

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { subscribeToTripActivity, getLastSeen, markSeen, ActivityItem } from '@/lib/notifications'
+import { Bell, Camera, Mic, MessageCircle, Wallet, LucideIcon } from 'lucide-react'
 
-const KIND_ICON: Record<ActivityItem['kind'], string> = {
-  photo: '📸',
-  voice: '🎤',
-  message: '💬',
-  expense: '💸',
+const KIND_ICON: Record<ActivityItem['kind'], LucideIcon> = {
+  photo: Camera,
+  voice: Mic,
+  message: MessageCircle,
+  expense: Wallet,
 }
 
 function timeAgo(ts: number): string {
@@ -56,9 +57,9 @@ export default function NotificationBell({ tripId }: { tripId: string }) {
       <button
         onClick={handleToggle}
         aria-label="Trip activity"
-        className="btn-secondary relative !px-4 !py-3 !text-[16px]"
+        className="btn-secondary relative !px-4 !py-3"
       >
-        🔔
+        <Bell size={16} />
         {unreadCount > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-white bg-pink px-1 font-mono text-[10px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -77,17 +78,20 @@ export default function NotificationBell({ tripId }: { tripId: string }) {
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              {others.map((item) => (
-                <div key={`${item.kind}-${item.id}`} className="flex items-start gap-2.5 rounded-xl px-2 py-2 hover:bg-paper-dim">
-                  <span className="text-[15px]">{KIND_ICON[item.kind]}</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium leading-snug text-ink">
-                      <span className="font-bold">{item.actorName}</span> {item.summary}
-                    </p>
-                    <p className="mt-0.5 font-mono text-[10px] font-semibold text-[#a39fb0]">{timeAgo(item.createdAt)}</p>
+              {others.map((item) => {
+                const Icon = KIND_ICON[item.kind]
+                return (
+                  <div key={`${item.kind}-${item.id}`} className="flex items-start gap-2.5 rounded-xl px-2 py-2 hover:bg-paper-dim">
+                    <Icon size={16} className="mt-0.5 shrink-0 text-ink" />
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium leading-snug text-ink">
+                        <span className="font-bold">{item.actorName}</span> {item.summary}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10px] font-semibold text-[#a39fb0]">{timeAgo(item.createdAt)}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
