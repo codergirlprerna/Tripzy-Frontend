@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import { AlertTriangle } from 'lucide-react'
 
 type Props = {
   children: ReactNode
@@ -45,7 +46,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-paper px-6 text-center">
-          <div className="text-[40px]">🫠</div>
+          <AlertTriangle size={40} className="text-[#c0325f]" />
           <h1 className="font-display text-[22px] font-extrabold">Something broke</h1>
           <p className="max-w-[380px] text-[14px] font-medium text-[#4a4460]">
             This screen hit an error it couldn't recover from. Your data is fine — this is just a display problem.

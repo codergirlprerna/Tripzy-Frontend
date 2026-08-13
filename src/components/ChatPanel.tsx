@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { subscribeToMessages, sendTextMessage, sendPollMessage } from '@/lib/chat'
 import { Message } from '@/types/message'
 import PollBubble from '@/components/PollBubble'
+import { BarChart3 } from 'lucide-react'
 
 export default function ChatPanel({ tripId }: { tripId: string }) {
   const { currentUser } = useAuth()
@@ -142,7 +143,7 @@ export default function ChatPanel({ tripId }: { tripId: string }) {
           className="btn-secondary shrink-0 !px-3 !py-2.5 !text-[16px]"
           title="Create a poll"
         >
-          📊
+          <BarChart3 size={18} />
         </button>
         <input
           type="text"

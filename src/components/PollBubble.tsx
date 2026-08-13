@@ -3,6 +3,7 @@ import { Message } from '@/types/message'
 import { voteOnPoll } from '@/lib/chat'
 import { useAuth } from '@/context/AuthContext'
 import Spinner from '@/components/Spinner'
+import { Check } from 'lucide-react'
 
 export default function PollBubble({ message }: { message: Message }) {
   const { currentUser } = useAuth()
@@ -47,7 +48,7 @@ export default function PollBubble({ message }: { message: Message }) {
               />
               <div className="relative flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5">
-                  {votingFor === option.id ? <Spinner size={12} /> : isMine && '✓ '}
+                  {votingFor === option.id ? <Spinner size={12} /> : isMine && <Check size={13} />}
                   {option.text}
                 </span>
                 <span className="font-mono text-[11px] text-[#7a7590]">{pct}%</span>

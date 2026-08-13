@@ -3,6 +3,7 @@ import { Entry } from '@/types/entry'
 import { setEntryLocation } from '@/lib/entries'
 import LocationPicker from '@/components/LocationPicker'
 import { LocationResult } from '@/lib/geocode'
+import { MapPin } from 'lucide-react'
 
 function formatDate(timestamp: number | null) {
   if (!timestamp) return 'Date unknown'
@@ -27,10 +28,12 @@ export default function EntryCard({ entry }: { entry: Entry }) {
         <div className="font-mono text-[11px] font-semibold text-[#7a7590]">{formatDate(entry.capturedAt)}</div>
 
         {entry.locationName ? (
-          <div className="mt-1 text-[12.5px] font-medium text-[#4a4460]">📍 {entry.locationName}</div>
+          <div className="mt-1 flex items-center gap-1 text-[12.5px] font-medium text-[#4a4460]">
+            <MapPin size={12} className="shrink-0" /> {entry.locationName}
+          </div>
         ) : hasLocation ? (
-          <div className="mt-1 text-[12.5px] font-medium text-[#4a4460]">
-            📍 {entry.latitude!.toFixed(3)}, {entry.longitude!.toFixed(3)}
+          <div className="mt-1 flex items-center gap-1 text-[12.5px] font-medium text-[#4a4460]">
+            <MapPin size={12} className="shrink-0" /> {entry.latitude!.toFixed(3)}, {entry.longitude!.toFixed(3)}
           </div>
         ) : addingLocation ? (
           <div className="mt-2">

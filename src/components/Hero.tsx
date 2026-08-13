@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { PartyPopper } from 'lucide-react'
 
 export default function Hero() {
   return (
@@ -70,8 +71,8 @@ export default function Hero() {
             on this trip
           </div>
 
-          <div className="sticker-card absolute bottom-[10px] right-[10px] z-[4] rotate-[4deg] px-3.5 py-3 font-display text-[12px] font-extrabold sm:right-[30px] sm:px-[18px] sm:py-4 sm:text-[13.5px]">
-            split: $0 owed 🎉
+          <div className="sticker-card absolute bottom-[10px] right-[10px] z-[4] flex items-center gap-1 rotate-[4deg] px-3.5 py-3 font-display text-[12px] font-extrabold sm:right-[30px] sm:px-[18px] sm:py-4 sm:text-[13.5px]">
+            split: $0 owed <PartyPopper size={14} />
           </div>
         </div>
       </div>

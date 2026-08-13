@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchTripzyGuide, TripzyGuide, GuidePlace } from '@/lib/destinationGuide'
+import { Compass, MapPin, MapPinned, Landmark, UtensilsCrossed, Utensils, LucideIcon } from 'lucide-react'
 
 type Props = {
   location: string
@@ -9,11 +10,11 @@ type Props = {
 const TABS = ['attractions', 'food'] as const
 type Tab = (typeof TABS)[number]
 
-function PlaceRow({ place, icon }: { place: GuidePlace; icon: string }) {
+function PlaceRow({ place, icon: Icon }: { place: GuidePlace; icon: LucideIcon }) {
   const distanceLabel = place.distanceKm < 1 ? `${Math.round(place.distanceKm * 1000)} m` : `${place.distanceKm.toFixed(1)} km`
   return (
     <div className="flex items-center gap-3 rounded-xl border-[2px] border-ink/10 px-3.5 py-3">
-      <span className="text-[17px]">{icon}</span>
+      <Icon size={17} className="shrink-0 text-ink" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-bold leading-tight">{place.name}</p>
         <p className="mt-0.5 text-[11.5px] font-medium text-[#7a7590]">{place.category}</p>
@@ -57,8 +58,12 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
       <div className="sticker-card flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden shadow-hard">
         <div className="flex items-start justify-between gap-4 border-b-[2px] border-dashed border-ink/15 p-6 pb-4">
           <div>
-            <h2 className="font-display text-[20px] font-extrabold">🧭 Your Tripzy Guide</h2>
-            <p className="mt-0.5 text-[12.5px] font-medium text-[#7a7590]">📍 {location}</p>
+            <h2 className="flex items-center gap-2 font-display text-[20px] font-extrabold">
+              <Compass size={19} /> Your Tripzy Guide
+            </h2>
+            <p className="mt-0.5 flex items-center gap-1 text-[12.5px] font-medium text-[#7a7590]">
+              <MapPin size={12} /> {location}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -80,7 +85,7 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
             </div>
           ) : notFound || !guide ? (
             <div className="py-10 text-center">
-              <div className="mb-3 text-[28px]">🗺️</div>
+              <div className="mb-3 flex justify-center text-[#a39fb0]"><MapPinned size={32} /></div>
               <p className="text-[14px] font-semibold">Couldn't place this destination.</p>
               <p className="mt-1 text-[12.5px] font-medium text-[#7a7590]">
                 Try a more specific location on the trip (e.g. "Lisbon, Portugal" instead of just a country).
@@ -121,19 +126,19 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
               <div className="mb-4 flex gap-2">
                 <button
                   onClick={() => setTab('attractions')}
-                  className={`rounded-full border-[2px] border-ink px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border-[2px] border-ink px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
                     tab === 'attractions' ? 'bg-ink text-white' : 'bg-white text-ink'
                   }`}
                 >
-                  🏛️ Attractions ({guide.attractions.length})
+                  <Landmark size={14} /> Attractions ({guide.attractions.length})
                 </button>
                 <button
                   onClick={() => setTab('food')}
-                  className={`rounded-full border-[2px] border-ink px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border-[2px] border-ink px-3.5 py-1.5 text-[12.5px] font-bold transition-colors ${
                     tab === 'food' ? 'bg-ink text-white' : 'bg-white text-ink'
                   }`}
                 >
-                  🍜 Food ({guide.food.length})
+                  <UtensilsCrossed size={14} /> Food ({guide.food.length})
                 </button>
               </div>
 
@@ -148,7 +153,7 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
               ) : (
                 <div className="flex flex-col gap-2">
                   {activePlaces.map((place, i) => (
-                    <PlaceRow key={`${place.name}-${i}`} place={place} icon={tab === 'attractions' ? '📍' : '🍽️'} />
+                    <PlaceRow key={`${place.name}-${i}`} place={place} icon={tab === 'attractions' ? MapPin : Utensils} />
                   ))}
                 </div>
               )}

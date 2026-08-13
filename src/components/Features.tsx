@@ -1,19 +1,20 @@
 import { useReveal } from '@/hooks/useReveal'
+import { MapPin, Users, Wallet, Mic, WifiOff, Unlock, LucideIcon } from 'lucide-react'
 
 type Feature = {
-  icon: string
+  icon: LucideIcon
   title: string
   body: string
   highlight?: boolean
 }
 
 const FEATURES: Feature[] = [
-  { icon: '📍', title: 'Auto-tagged timeline', body: 'Photos land on the map and timeline by themselves, pulled from what\'s already on each shot.' },
-  { icon: '👥', title: 'Shared trips, real-time', body: 'The one thing most travel journals get wrong: more than one person can document the same trip, live.', highlight: true },
-  { icon: '💸', title: 'Built-in expense split', body: 'Log a cost once, split it your way, in whatever currency it was actually paid in.' },
-  { icon: '🎙️', title: 'Voice-note entries', body: 'Too tired to type at the end of a long day? Talk instead — Tripzy transcribes it into your journal.' },
-  { icon: '📶', title: 'Works with no signal', body: 'Everything saves locally first and syncs the moment you\'re back online. Remote trips included.' },
-  { icon: '🔓', title: 'Your data, always', body: 'Export the raw photos and notes any time, not just a locked PDF. It\'s your trip, not ours.' },
+  { icon: MapPin, title: 'Auto-tagged timeline', body: 'Photos land on the map and timeline by themselves, pulled from what\'s already on each shot.' },
+  { icon: Users, title: 'Shared trips, real-time', body: 'The one thing most travel journals get wrong: more than one person can document the same trip, live.', highlight: true },
+  { icon: Wallet, title: 'Built-in expense split', body: 'Log a cost once, split it your way, in whatever currency it was actually paid in.' },
+  { icon: Mic, title: 'Voice-note entries', body: 'Too tired to type at the end of a long day? Talk instead — Tripzy transcribes it into your journal.' },
+  { icon: WifiOff, title: 'Works with no signal', body: 'Everything saves locally first and syncs the moment you\'re back online. Remote trips included.' },
+  { icon: Unlock, title: 'Your data, always', body: 'Export the raw photos and notes any time, not just a locked PDF. It\'s your trip, not ours.' },
 ]
 
 function FeatureCard({ feature }: { feature: Feature }) {
@@ -27,11 +28,11 @@ function FeatureCard({ feature }: { feature: Feature }) {
       } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
     >
       <div
-        className={`mb-[18px] flex h-11 w-11 items-center justify-center rounded-xl border-[2.5px] text-xl ${
+        className={`mb-[18px] flex h-11 w-11 items-center justify-center rounded-xl border-[2.5px] ${
           feature.highlight ? 'border-white/30 bg-white/10' : 'border-ink bg-paper-dim'
         }`}
       >
-        {feature.icon}
+        <feature.icon size={20} />
       </div>
       <h4 className="mb-2 font-display text-[18px] font-extrabold">{feature.title}</h4>
       <p className={`text-[14px] leading-relaxed font-medium ${feature.highlight ? 'text-white/72' : 'text-[#4a4460]'}`}>

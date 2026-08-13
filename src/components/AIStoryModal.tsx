@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Sparkles, RotateCw, Copy, Check } from 'lucide-react'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 import { generateTripStory } from '@/lib/aiStory'
@@ -37,7 +38,9 @@ export default function AIStoryModal({ trip, entries, onClose }: Props) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
       <div className="sticker-card max-h-[85vh] w-full max-w-[480px] overflow-y-auto p-7 shadow-hard">
         <div className="mb-1 flex items-start justify-between gap-4">
-          <h2 className="font-display text-[20px] font-extrabold">✨ AI trip story</h2>
+          <h2 className="flex items-center gap-2 font-display text-[20px] font-extrabold">
+            <Sparkles size={19} /> AI trip story
+          </h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -62,11 +65,19 @@ export default function AIStoryModal({ trip, entries, onClose }: Props) {
             </div>
 
             <div className="mt-5 flex gap-3">
-              <button onClick={runGenerate} className="btn-secondary !px-4 !py-2.5 !text-[13px]">
-                🔁 Regenerate
+              <button onClick={runGenerate} className="btn-secondary inline-flex items-center gap-1.5 !px-4 !py-2.5 !text-[13px]">
+                <RotateCw size={14} /> Regenerate
               </button>
-              <button onClick={handleCopy} className="btn-secondary !px-4 !py-2.5 !text-[13px]">
-                {copied ? 'Copied!' : '📋 Copy'}
+              <button onClick={handleCopy} className="btn-secondary inline-flex items-center gap-1.5 !px-4 !py-2.5 !text-[13px]">
+                {copied ? (
+                  <>
+                    <Check size={14} /> Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} /> Copy
+                  </>
+                )}
               </button>
             </div>
           </>

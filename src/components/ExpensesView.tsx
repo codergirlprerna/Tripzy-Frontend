@@ -2,6 +2,7 @@ import { Trip } from '@/types/trip'
 import { Expense } from '@/types/expense'
 import { computeBalances } from '@/lib/balances'
 import { setExpenseSettled } from '@/lib/expenses'
+import { Check } from 'lucide-react'
 
 type Props = {
   trip: Trip
@@ -44,11 +45,17 @@ export default function ExpensesView({ trip, expenses }: Props) {
                   </div>
                   <button
                     onClick={() => toggleSettled(expense)}
-                    className={`rounded-full border-2 border-ink px-3 py-1.5 text-[11px] font-bold ${
+                    className={`inline-flex items-center gap-1 rounded-full border-2 border-ink px-3 py-1.5 text-[11px] font-bold ${
                       expense.settled ? 'bg-lime' : 'bg-white'
                     }`}
                   >
-                    {expense.settled ? '✓ Settled' : 'Settle up'}
+                    {expense.settled ? (
+                      <>
+                        <Check size={12} /> Settled
+                      </>
+                    ) : (
+                      'Settle up'
+                    )}
                   </button>
                 </div>
               </div>

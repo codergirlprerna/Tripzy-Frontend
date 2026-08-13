@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useReveal } from '@/hooks/useReveal'
+import { Check } from 'lucide-react'
 
 type Plan = {
   name: string
@@ -72,7 +73,7 @@ function PlanCard({ plan }: { plan: Plan }) {
       <ul className="my-6 flex flex-grow flex-col gap-3">
         {plan.features.map((f) => (
           <li key={f} className="flex gap-2.5 text-[14px] font-semibold text-[#332d47]">
-            <span className="font-extrabold text-ink">✓</span>
+            <Check size={17} className="shrink-0 text-ink" strokeWidth={3} />
             {f}
           </li>
         ))}
