@@ -3,6 +3,7 @@ import { Sparkles, RotateCw, Copy, Check } from 'lucide-react'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 import { generateTripStory } from '@/lib/aiStory'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   trip: Trip
@@ -11,6 +12,7 @@ type Props = {
 }
 
 export default function AIStoryModal({ trip, entries, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const [story, setStory] = useState('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -35,8 +37,8 @@ export default function AIStoryModal({ trip, entries, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card max-h-[85vh] w-full max-w-[480px] overflow-y-auto p-7 shadow-hard">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="AI trip story" tabIndex={-1} className="modal-card sticker-card max-h-[85vh] w-full max-w-[480px] overflow-y-auto p-7 shadow-hard">
         <div className="mb-1 flex items-start justify-between gap-4">
           <h2 className="flex items-center gap-2 font-display text-[20px] font-extrabold">
             <Sparkles size={19} /> AI trip story

@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { addExpense } from '@/lib/expenses'
 import { Trip } from '@/types/trip'
 import Spinner from '@/components/Spinner'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'AUD']
 
@@ -12,6 +13,7 @@ type Props = {
 }
 
 export default function AddExpenseModal({ trip, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const { currentUser } = useAuth()
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -54,8 +56,8 @@ export default function AddExpenseModal({ trip, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card max-h-[90vh] w-full max-w-[440px] overflow-y-auto p-7 shadow-hard sm:p-8">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Add expense" tabIndex={-1} className="modal-card sticker-card max-h-[90vh] w-full max-w-[440px] overflow-y-auto p-7 shadow-hard sm:p-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-display text-[22px] font-extrabold">Log an expense</h2>
           <button

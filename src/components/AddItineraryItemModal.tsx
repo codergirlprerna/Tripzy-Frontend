@@ -4,6 +4,7 @@ import { Trip } from '@/types/trip'
 import { ItineraryItem } from '@/types/itinerary'
 import { addItineraryItem, updateItineraryItem } from '@/lib/itinerary'
 import Spinner from '@/components/Spinner'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   trip: Trip
@@ -13,6 +14,7 @@ type Props = {
 }
 
 export default function AddItineraryItemModal({ trip, editingItem, defaultDay, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const { currentUser } = useAuth()
   const [day, setDay] = useState(editingItem?.day || defaultDay)
   const [time, setTime] = useState(editingItem?.time || '')
@@ -56,8 +58,8 @@ export default function AddItineraryItemModal({ trip, editingItem, defaultDay, o
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card w-full max-w-[440px] p-7 shadow-hard">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label={editingItem ? 'Edit plan' : 'Add to itinerary'} tabIndex={-1} className="modal-card sticker-card w-full max-w-[440px] p-7 shadow-hard">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-[19px] font-extrabold">{editingItem ? 'Edit plan' : 'Add to itinerary'}</h2>
           <button

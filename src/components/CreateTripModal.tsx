@@ -4,6 +4,7 @@ import { createTrip } from '@/lib/trips'
 import LocationPicker from '@/components/LocationPicker'
 import { LocationResult } from '@/lib/geocode'
 import { getUserPlan, countOwnedTrips, PLAN_LIMITS } from '@/lib/users'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 const COVER_OPTIONS = [
   { id: 'sunset', gradient: 'linear-gradient(160deg,#ff6ec7,#ffb86b)' },
@@ -17,6 +18,7 @@ type Props = {
 }
 
 export default function CreateTripModal({ onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const [title, setTitle] = useState('')
   const [location, setLocation] = useState('')
   const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number } | null>(null)
@@ -72,8 +74,8 @@ export default function CreateTripModal({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card max-h-[90vh] w-full max-w-[480px] overflow-y-auto p-7 shadow-hard sm:p-8">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Create trip" tabIndex={-1} className="modal-card sticker-card max-h-[90vh] w-full max-w-[480px] overflow-y-auto p-7 shadow-hard sm:p-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-display text-[22px] font-extrabold">New trip</h2>
           <button

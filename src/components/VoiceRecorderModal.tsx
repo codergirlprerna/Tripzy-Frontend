@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Spinner from '@/components/Spinner'
 import { Mic, Square } from 'lucide-react'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   onSave: (audioBlob: Blob, transcript: string) => Promise<void>
@@ -14,6 +15,7 @@ const SpeechRecognitionAPI =
   (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
 export default function VoiceRecorderModal({ onSave, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const [recording, setRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -89,8 +91,8 @@ export default function VoiceRecorderModal({ onSave, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card w-full max-w-[420px] p-7 shadow-hard sm:p-8">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Record voice note" tabIndex={-1} className="modal-card sticker-card w-full max-w-[420px] p-7 shadow-hard sm:p-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-display text-[20px] font-extrabold">Voice note</h2>
           <button

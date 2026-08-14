@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trip } from '@/types/trip'
 import { deleteTrip } from '@/lib/trips'
 import { useAuth } from '@/context/AuthContext'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   trip: Trip
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export default function DeleteTripModal({ trip, onClose, onDeleted }: Props) {
+  const modalRef = useModalA11y(onClose)
   const { currentUser } = useAuth()
   const [confirmText, setConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -37,8 +39,8 @@ export default function DeleteTripModal({ trip, onClose, onDeleted }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card w-full max-w-[420px] p-7 shadow-hard">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Delete trip" tabIndex={-1} className="modal-card sticker-card w-full max-w-[420px] p-7 shadow-hard">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-[19px] font-extrabold">Delete trip</h2>
           <button

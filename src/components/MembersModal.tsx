@@ -3,6 +3,7 @@ import { Trip, TripRole } from '@/types/trip'
 import { setMemberRole, removeMember } from '@/lib/trips'
 import { useAuth } from '@/context/AuthContext'
 import Spinner from '@/components/Spinner'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   trip: Trip
@@ -16,6 +17,7 @@ const ROLE_LABELS: Record<TripRole, string> = {
 }
 
 export default function MembersModal({ trip, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const { currentUser } = useAuth()
   const [busyUid, setBusyUid] = useState<string | null>(null)
   const myRole = currentUser ? trip.members[currentUser.uid]?.role : undefined
@@ -34,8 +36,8 @@ export default function MembersModal({ trip, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card max-h-[80vh] w-full max-w-[420px] overflow-y-auto p-7 shadow-hard">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Trip members" tabIndex={-1} className="modal-card sticker-card max-h-[80vh] w-full max-w-[420px] overflow-y-auto p-7 shadow-hard">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-[20px] font-extrabold">Trip members</h2>
           <button

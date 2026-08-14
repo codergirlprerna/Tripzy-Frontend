@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTripzyGuide, TripzyGuide, GuidePlace } from '@/lib/destinationGuide'
 import { Compass, MapPin, MapPinned, Landmark, UtensilsCrossed, Utensils, LucideIcon } from 'lucide-react'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   location: string
@@ -25,6 +26,7 @@ function PlaceRow({ place, icon: Icon }: { place: GuidePlace; icon: LucideIcon }
 }
 
 export default function DestinationGuideModal({ location, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const [guide, setGuide] = useState<TripzyGuide | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -54,8 +56,8 @@ export default function DestinationGuideModal({ location, onClose }: Props) {
   const activePlaces = guide ? (tab === 'attractions' ? guide.attractions : guide.food) : []
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
-      <div className="sticker-card flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden shadow-hard">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/40 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Your Tripzy Guide" tabIndex={-1} className="modal-card sticker-card flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden shadow-hard">
         <div className="flex items-start justify-between gap-4 border-b-[2px] border-dashed border-ink/15 p-6 pb-4">
           <div>
             <h2 className="flex items-center gap-2 font-display text-[20px] font-extrabold">

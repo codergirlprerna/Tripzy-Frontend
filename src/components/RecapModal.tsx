@@ -4,6 +4,7 @@ import jsPDF from 'jspdf'
 import { Trip } from '@/types/trip'
 import { Entry } from '@/types/entry'
 import { computeRecapStats } from '@/lib/recap'
+import { useModalA11y } from '@/hooks/useModalA11y'
 
 type Props = {
   trip: Trip
@@ -12,6 +13,7 @@ type Props = {
 }
 
 export default function RecapModal({ trip, entries, onClose }: Props) {
+  const modalRef = useModalA11y(onClose)
   const stats = computeRecapStats(trip, entries)
   const captureRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
@@ -37,8 +39,8 @@ export default function RecapModal({ trip, entries, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 px-4 py-8">
-      <div className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto">
+    <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 px-4 py-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Trip recap" tabIndex={-1} className="modal-card max-h-[92vh] w-full max-w-[560px] overflow-y-auto">
         <div className="mb-4 flex items-center justify-between px-2">
           <h2 className="font-display text-[18px] font-extrabold text-white">Trip recap</h2>
           <button
