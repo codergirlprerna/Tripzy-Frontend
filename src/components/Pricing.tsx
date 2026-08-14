@@ -52,7 +52,7 @@ function PlanCard({ plan }: { plan: Plan }) {
   return (
     <div
       ref={ref}
-      className={`relative flex flex-col rounded-brand border-[2.5px] border-ink p-7 sm:p-8 transition-all duration-500 ${
+      className={`relative flex flex-col rounded-2xl border-[2.5px] border-ink p-7 sm:p-8 transition-all duration-500 ${
         plan.popular ? 'bg-lime shadow-hard' : 'bg-white shadow-hard-sm'
       } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
     >

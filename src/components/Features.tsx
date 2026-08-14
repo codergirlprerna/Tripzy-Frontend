@@ -23,7 +23,7 @@ function FeatureCard({ feature }: { feature: Feature }) {
   return (
     <div
       ref={ref}
-      className={`rounded-brand border-[2.5px] border-ink p-6 sm:p-7 shadow-hard-sm transition-all duration-500 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard ${
+      className={`rounded-2xl border-[2.5px] border-ink p-6 sm:p-7 shadow-hard-sm transition-all duration-500 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard ${
         feature.highlight ? 'bg-ink text-white' : 'bg-white'
       } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
     >

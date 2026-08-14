@@ -15,7 +15,7 @@ export default function Recap() {
       <div className="mx-auto max-w-[1180px] px-6 sm:px-8">
         <div
           ref={ref}
-          className={`relative overflow-hidden rounded-[28px] border-[3px] border-ink bg-ink p-8 text-white transition-all duration-700 sm:p-12 lg:p-[70px] ${
+          className={`relative overflow-hidden rounded-showcase border-[3px] border-ink bg-ink p-8 text-white transition-all duration-700 sm:p-12 lg:p-[70px] ${
             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}
         >

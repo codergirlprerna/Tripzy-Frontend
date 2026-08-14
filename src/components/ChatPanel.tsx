@@ -57,7 +57,7 @@ export default function ChatPanel({ tripId }: { tripId: string }) {
   }
 
   return (
-    <div className="flex h-[560px] flex-col rounded-brand border-[2.5px] border-ink bg-white shadow-hard-sm">
+    <div className="flex h-[560px] flex-col rounded-2xl border-[2.5px] border-ink bg-white shadow-hard-sm">
       <div className="flex-1 overflow-y-auto p-5">
         {messages.length === 0 && (
           <div className="py-16 text-center text-[14px] font-medium text-[#4a4460]">

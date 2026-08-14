@@ -493,7 +493,7 @@ export default function TripMap({ entries }: Props) {
 
       <div
         ref={mapContainerRef}
-        className="h-[420px] w-full overflow-hidden rounded-brand border-[2.5px] border-ink shadow-hard-sm"
+        className="h-[420px] w-full overflow-hidden rounded-2xl border-[2.5px] border-ink shadow-hard-sm"
       />
       {locatedEntries.length === 0 && (
         <p className="mt-3 text-center text-[13px] font-medium text-[#4a4460]">

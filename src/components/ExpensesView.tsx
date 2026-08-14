@@ -20,7 +20,7 @@ export default function ExpensesView({ trip, expenses }: Props) {
     <div>
       {expenses.length === 0 ? (
         <div className="py-16 text-center text-[14.5px] font-medium text-[#4a4460]">
-          No expenses logged yet — add one to start splitting costs with the crew.
+          No expenses yet — log the first one to start splitting costs with the crew.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">

@@ -365,7 +365,7 @@ export default function TripDetailPage() {
           {view === 'photos' ? (
             entries.length === 0 ? (
               <div className="py-16 text-center text-[14.5px] font-medium text-[#4a4460]">
-                No photos yet — add some to start building the timeline.
+                No photos yet — drop the first one in and the timeline starts building itself.
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

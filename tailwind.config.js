@@ -23,7 +23,12 @@ export default {
         'hard-white': '6px 6px 0 rgba(255,255,255,0.25)',
       },
       borderRadius: {
-        brand: '18px',
+        // A larger "showcase" tier for the two dark hero-style recap
+        // surfaces (Recap.tsx teaser, RecapModal.tsx capture card) — bigger
+        // than the standard rounded-2xl (16px) used everywhere else, used
+        // consistently by both instead of each picking its own arbitrary
+        // pixel value (they previously drifted to 28px and 24px separately).
+        showcase: '28px',
       },
     },
   },

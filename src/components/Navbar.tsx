@@ -17,7 +17,7 @@ export default function Navbar() {
       <nav className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-[18px] sm:px-8">
         <a href="#top" className="flex items-center gap-2 font-display text-[26px] font-extrabold tracking-tight">
           <span
-            className="inline-block h-[30px] w-[30px] -rotate-[8deg] rounded-[9px] border-[2.5px] border-ink"
+            className="inline-block h-[30px] w-[30px] -rotate-[8deg] rounded-lg border-[2.5px] border-ink"
             style={{ background: 'linear-gradient(135deg, #ff6ec7, #ffb86b)' }}
           />
           tripzy

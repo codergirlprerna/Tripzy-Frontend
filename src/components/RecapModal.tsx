@@ -55,7 +55,7 @@ export default function RecapModal({ trip, entries, onClose }: Props) {
         {/* This is the element captured into the PDF — keep all visual styling on this node */}
         <div
           ref={captureRef}
-          className="relative overflow-hidden rounded-[24px] border-[3px] border-ink p-8 text-white"
+          className="relative overflow-hidden rounded-showcase border-[3px] border-ink p-8 text-white"
           style={{ background: '#161221' }}
         >
           <div

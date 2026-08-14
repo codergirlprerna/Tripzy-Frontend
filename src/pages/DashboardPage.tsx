@@ -54,7 +54,7 @@ export default function DashboardPage() {
             </div>
             <h1 className="mb-2 font-display text-[26px] font-extrabold">No trips yet</h1>
             <p className="mb-7 text-[14.5px] font-medium text-[#4a4460]">
-              Start documenting your adventures by creating your first trip.
+              Drop in photos, invite your people, and watch it build itself — starting with trip #1.
             </p>
             <button onClick={() => setShowModal(true)} className="btn-primary">
               Create your first trip
