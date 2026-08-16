@@ -18,6 +18,7 @@ import {
 import { db } from '@/lib/firebase'
 import { logAnalyticsEvent } from '@/lib/analytics'
 import { deleteCloudinaryAssets } from '@/lib/cloudinaryCleanup'
+import { uploadToCloudinary } from '@/lib/cloudinary'
 import { NewTrip, Trip, TripRole } from '@/types/trip'
 import { User } from 'firebase/auth'
 
@@ -27,11 +28,11 @@ function generateInviteCode() {
   return Math.random().toString(36).slice(2, 10)
 }
 
-export async function createTrip(trip: NewTrip, ownerName: string) {
+export async function createTrip(trip: NewTrip, ownerName: string): Promise<string> {
   const inviteCode = generateInviteCode()
   const now = Date.now()
 
-  await addDoc(collection(db, TRIPS_COLLECTION), {
+  const docRef = await addDoc(collection(db, TRIPS_COLLECTION), {
     ...trip,
     createdAt: now,
     memberIds: [trip.ownerId],
@@ -41,6 +42,7 @@ export async function createTrip(trip: NewTrip, ownerName: string) {
     inviteCode,
   })
   logAnalyticsEvent('trip_created', { location: trip.location })
+  return docRef.id
 }
 
 /**
@@ -62,6 +64,24 @@ export function subscribeToUserTrips(userId: string, callback: (trips: Trip[]) =
     })) as Trip[]
     callback(trips)
   })
+}
+
+/**
+ * Uploads a cropped cover-photo blob to Cloudinary and saves the URL onto
+ * the trip doc. Doesn't touch coverColor — if coverImageUrl is ever cleared
+ * (removeTripCoverPhoto below), the trip falls back to whatever gradient
+ * was chosen at creation, so removing a photo cover never leaves a trip
+ * with no cover at all.
+ */
+export async function updateTripCoverPhoto(tripId: string, imageBlob: Blob): Promise<string> {
+  const upload = await uploadToCloudinary(imageBlob, `cover-${tripId}-${Date.now()}.jpg`)
+  await updateDoc(doc(db, TRIPS_COLLECTION, tripId), { coverImageUrl: upload.url })
+  logAnalyticsEvent('trip_cover_photo_set', { trip_id: tripId })
+  return upload.url
+}
+
+export async function removeTripCoverPhoto(tripId: string) {
+  await updateDoc(doc(db, TRIPS_COLLECTION, tripId), { coverImageUrl: deleteField() })
 }
 
 export async function setMemberRole(tripId: string, uid: string, role: TripRole) {

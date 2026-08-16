@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, Suspense, lazy } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { getTrip, subscribeToTripEntries, addPhotoEntry, addVoiceEntry } from '@/lib/entries'
+import { updateTripCoverPhoto } from '@/lib/trips'
 import { enqueueUpload } from '@/lib/offlineQueue'
 import { subscribeToTripExpenses } from '@/lib/expenses'
 import { subscribeToItinerary } from '@/lib/itinerary'
@@ -32,7 +33,8 @@ import AIStoryModal from '@/components/AIStoryModal'
 import DeleteTripModal from '@/components/DeleteTripModal'
 import ItineraryView from '@/components/ItineraryView'
 import AddItineraryItemModal from '@/components/AddItineraryItemModal'
-import { MapPin, Users, Compass, Sparkles, Trash2, Mic } from 'lucide-react'
+import CoverPhotoModal from '@/components/CoverPhotoModal'
+import { MapPin, Users, Compass, Sparkles, Trash2, Mic, Camera } from 'lucide-react'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -61,6 +63,8 @@ export default function TripDetailPage() {
   const [editIndex, setEditIndex] = useState(0)
   const [editImageSrc, setEditImageSrc] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const coverFileInputRef = useRef<HTMLInputElement>(null)
+  const [croppingCoverSrc, setCroppingCoverSrc] = useState<string | null>(null)
 
   useEffect(() => {
     if (!tripId) return
@@ -174,6 +178,26 @@ export default function TripDetailPage() {
     setEditImageSrc(null)
   }
 
+  function handleCoverFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCroppingCoverSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  async function handleCoverCropConfirm(blob: Blob) {
+    if (!trip) return
+    setCroppingCoverSrc(null)
+    try {
+      const uploadedUrl = await updateTripCoverPhoto(trip.id, blob)
+      setTrip({ ...trip, coverImageUrl: uploadedUrl })
+    } catch (err) {
+      console.error('Failed to update cover photo:', err)
+    }
+  }
+
   async function handleSaveVoiceNote(audioBlob: Blob, transcript: string) {
     if (!tripId || !currentUser) return
     const userName = currentUser.displayName || currentUser.email || 'Someone'
@@ -212,7 +236,30 @@ export default function TripDetailPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <div className="h-[220px]" style={{ background: trip.coverColor }} />
+      <div className="group relative h-[220px]">
+        {trip.coverImageUrl ? (
+          <img src={trip.coverImageUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full w-full" style={{ background: trip.coverColor }} />
+        )}
+        {canEdit && (
+          <>
+            <button
+              onClick={() => coverFileInputRef.current?.click()}
+              className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border-2 border-ink bg-white/90 px-3 py-1.5 text-[12px] font-bold opacity-0 shadow-hard-sm backdrop-blur-sm transition-opacity group-hover:opacity-100"
+            >
+              <Camera size={13} /> {trip.coverImageUrl ? 'Change cover' : 'Add cover photo'}
+            </button>
+            <input
+              ref={coverFileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverFileSelect}
+              className="hidden"
+            />
+          </>
+        )}
+      </div>
 
       <div className="mx-auto max-w-[1180px] px-8">
         <div className="-mt-10 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -431,6 +478,13 @@ export default function TripDetailPage() {
           trip={trip}
           onClose={() => setShowDeleteTrip(false)}
           onDeleted={() => navigate('/dashboard')}
+        />
+      )}
+      {croppingCoverSrc && (
+        <CoverPhotoModal
+          imageSrc={croppingCoverSrc}
+          onConfirm={handleCoverCropConfirm}
+          onCancel={() => setCroppingCoverSrc(null)}
         />
       )}
       {showVoiceRecorder && (

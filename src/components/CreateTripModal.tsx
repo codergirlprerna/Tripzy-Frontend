@@ -1,10 +1,12 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { createTrip } from '@/lib/trips'
+import { createTrip, updateTripCoverPhoto } from '@/lib/trips'
 import LocationPicker from '@/components/LocationPicker'
 import { LocationResult } from '@/lib/geocode'
 import { getUserPlan, countOwnedTrips, PLAN_LIMITS } from '@/lib/users'
 import { useModalA11y } from '@/hooks/useModalA11y'
+import CoverPhotoModal from '@/components/CoverPhotoModal'
+import { Camera, X } from 'lucide-react'
 
 const COVER_OPTIONS = [
   { id: 'sunset', gradient: 'linear-gradient(160deg,#ff6ec7,#ffb86b)' },
@@ -26,10 +28,36 @@ export default function CreateTripModal({ onClose }: Props) {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [coverColor, setCoverColor] = useState(COVER_OPTIONS[0].gradient)
+  const [coverPhotoBlob, setCoverPhotoBlob] = useState<Blob | null>(null)
+  const [coverPhotoPreviewUrl, setCoverPhotoPreviewUrl] = useState<string | null>(null)
+  const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { currentUser } = useAuth()
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCroppingImageSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    e.target.value = '' // allow re-selecting the same file later
+  }
+
+  function handleCropConfirm(blob: Blob) {
+    if (coverPhotoPreviewUrl) URL.revokeObjectURL(coverPhotoPreviewUrl)
+    setCoverPhotoBlob(blob)
+    setCoverPhotoPreviewUrl(URL.createObjectURL(blob))
+    setCroppingImageSrc(null)
+  }
+
+  function handleRemoveCoverPhoto() {
+    if (coverPhotoPreviewUrl) URL.revokeObjectURL(coverPhotoPreviewUrl)
+    setCoverPhotoBlob(null)
+    setCoverPhotoPreviewUrl(null)
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -51,7 +79,7 @@ export default function CreateTripModal({ onClose }: Props) {
         return
       }
 
-      await createTrip(
+      const newTripId = await createTrip(
         {
           ownerId: currentUser.uid,
           title,
@@ -65,6 +93,20 @@ export default function CreateTripModal({ onClose }: Props) {
         },
         currentUser.displayName || currentUser.email || 'Someone',
       )
+
+      // Cover photo upload happens AFTER the trip doc exists — it needs a
+      // real tripId for the Cloudinary filename and the Firestore update
+      // target. If this specific step fails, the trip itself is still
+      // created successfully with its gradient cover as a fallback rather
+      // than losing the whole trip over a photo upload hiccup.
+      if (coverPhotoBlob) {
+        try {
+          await updateTripCoverPhoto(newTripId, coverPhotoBlob)
+        } catch (coverErr) {
+          console.warn('Trip created, but cover photo upload failed:', coverErr)
+        }
+      }
+
       onClose()
     } catch (err: any) {
       setError(err.message || 'Could not create the trip. Try again.')
@@ -165,23 +207,49 @@ export default function CreateTripModal({ onClose }: Props) {
             <label className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-wide text-[#4a4460]">
               Cover
             </label>
-            <div className="flex gap-3">
-              {COVER_OPTIONS.map((cover) => (
+
+            {coverPhotoPreviewUrl ? (
+              <div className="relative h-24 w-full overflow-hidden rounded-xl border-[2.5px] border-ink">
+                <img src={coverPhotoPreviewUrl} alt="Cover preview" className="h-full w-full object-cover" />
                 <button
-                  key={cover.id}
                   type="button"
-                  onClick={() => setCoverColor(cover.gradient)}
-                  aria-label={`Choose ${cover.id} cover`}
-                  className={`h-12 w-12 rounded-xl border-[2.5px] border-ink transition-transform ${
-                    coverColor === cover.gradient ? 'scale-110 shadow-hard-sm' : ''
-                  }`}
-                  style={{ background: cover.gradient }}
-                />
-              ))}
-            </div>
-            <p className="mt-2 text-[12px] font-medium text-[#4a4460]">
-              Real photo covers come with photo upload — next up.
-            </p>
+                  onClick={handleRemoveCoverPhoto}
+                  aria-label="Remove cover photo"
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink bg-white"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  {COVER_OPTIONS.map((cover) => (
+                    <button
+                      key={cover.id}
+                      type="button"
+                      onClick={() => setCoverColor(cover.gradient)}
+                      aria-label={`Choose ${cover.id} cover`}
+                      className={`h-12 w-12 rounded-xl border-[2.5px] border-ink transition-transform ${
+                        coverColor === cover.gradient ? 'scale-110 shadow-hard-sm' : ''
+                      }`}
+                      style={{ background: cover.gradient }}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Upload your own cover photo"
+                    className="flex h-12 w-12 items-center justify-center rounded-xl border-[2.5px] border-dashed border-ink text-[#4a4460]"
+                  >
+                    <Camera size={18} />
+                  </button>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                <p className="mt-2 text-[12px] font-medium text-[#4a4460]">
+                  Pick a gradient, or upload your own photo.
+                </p>
+              </>
+            )}
           </div>
 
           <button type="submit" disabled={submitting} className="btn-primary mt-2 w-full !text-center disabled:opacity-60">
@@ -189,6 +257,14 @@ export default function CreateTripModal({ onClose }: Props) {
           </button>
         </form>
       </div>
+
+      {croppingImageSrc && (
+        <CoverPhotoModal
+          imageSrc={croppingImageSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCroppingImageSrc(null)}
+        />
+      )}
     </div>
   )
 }

@@ -11,6 +11,7 @@ export type Trip = {
   startDate: string
   endDate: string
   coverColor: string
+  coverImageUrl?: string // if set, a custom uploaded cover photo takes precedence over coverColor
   createdAt: number
   memberIds: string[]
   members: Record<string, { role: TripRole; joinedAt: number; name: string }>

@@ -27,7 +27,11 @@ export default function TripCard({ trip }: { trip: Trip }) {
         to={`/trip/${trip.id}`}
         className="sticker-card block overflow-hidden shadow-hard-sm transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard"
       >
-        <div className="h-[140px]" style={{ background: trip.coverColor }} />
+        {trip.coverImageUrl ? (
+          <img src={trip.coverImageUrl} alt="" className="h-[140px] w-full object-cover" />
+        ) : (
+          <div className="h-[140px]" style={{ background: trip.coverColor }} />
+        )}
         <div className="p-5">
           <h3 className="mb-1.5 font-display text-[17px] font-extrabold">{trip.title}</h3>
           <div className="mb-1 flex items-center gap-1 text-[13px] font-medium text-[#4a4460]">
