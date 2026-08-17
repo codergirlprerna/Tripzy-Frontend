@@ -14,7 +14,16 @@ type Props = {
 // fills (TripDetailPage's banner, TripCard's top strip), unlike
 // PhotoEditorModal's free-form crop which is built for portrait/landscape
 // photo entries, not a fixed banner shape.
-const COVER_ASPECT = 3
+// Deliberately NOT a tight banner-matching ratio. The banner this displays
+// in isn't a fixed shape — it's ~8.6:1 on a wide desktop screen but only
+// ~1.7:1 on a phone (same 220px height, very different width), and no
+// single crop can match both. Pre-cropping tightly to try to match one of
+// them just meant the OTHER context re-cropped it further and cut off more
+// than necessary — that's what caused photos losing their top edge.
+// 2:1 keeps far more of the actual photo; object-fit: cover at each
+// display site (TripCard, TripDetailPage) does the final, context-specific
+// crop from that larger source instead of double-cropping an already-thin sliver.
+const COVER_ASPECT = 2
 
 export default function CoverPhotoModal({ imageSrc, onConfirm, onCancel }: Props) {
   const modalRef = useModalA11y(onCancel)
