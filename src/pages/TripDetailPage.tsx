@@ -238,7 +238,7 @@ export default function TripDetailPage() {
     <div className="min-h-screen bg-paper">
       <div className="group relative h-[220px]">
         {trip.coverImageUrl ? (
-          <img src={trip.coverImageUrl} alt="" className="h-full w-full object-cover" />
+          <img src={trip.coverImageUrl} alt="" className="h-full w-full object-cover object-top" />
         ) : (
           <div className="h-full w-full" style={{ background: trip.coverColor }} />
         )}

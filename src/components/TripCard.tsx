@@ -28,7 +28,7 @@ export default function TripCard({ trip }: { trip: Trip }) {
         className="sticker-card block overflow-hidden shadow-hard-sm transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard"
       >
         {trip.coverImageUrl ? (
-          <img src={trip.coverImageUrl} alt="" className="h-[140px] w-full object-cover" />
+          <img src={trip.coverImageUrl} alt="" className="h-[140px] w-full object-cover object-top" />
         ) : (
           <div className="h-[140px]" style={{ background: trip.coverColor }} />
         )}
