@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, Suspense, lazy } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { getTrip, subscribeToTripEntries, addPhotoEntry, addVoiceEntry } from '@/lib/entries'
-import { updateTripCoverPhoto } from '@/lib/trips'
+import { updateTripCoverPhoto, removeTripCoverPhoto } from '@/lib/trips'
 import { enqueueUpload } from '@/lib/offlineQueue'
 import { subscribeToTripExpenses } from '@/lib/expenses'
 import { subscribeToItinerary } from '@/lib/itinerary'
@@ -34,7 +34,8 @@ import DeleteTripModal from '@/components/DeleteTripModal'
 import ItineraryView from '@/components/ItineraryView'
 import AddItineraryItemModal from '@/components/AddItineraryItemModal'
 import CoverPhotoModal from '@/components/CoverPhotoModal'
-import { MapPin, Users, Compass, Sparkles, Trash2, Mic, Camera } from 'lucide-react'
+import Spinner from '@/components/Spinner'
+import { MapPin, Users, Compass, Sparkles, Trash2, Mic, Camera, X } from 'lucide-react'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -65,6 +66,7 @@ export default function TripDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const coverFileInputRef = useRef<HTMLInputElement>(null)
   const [croppingCoverSrc, setCroppingCoverSrc] = useState<string | null>(null)
+  const [removingCover, setRemovingCover] = useState(false)
 
   useEffect(() => {
     if (!tripId) return
@@ -198,6 +200,20 @@ export default function TripDetailPage() {
     }
   }
 
+  async function handleRemoveCoverPhoto() {
+    if (!trip) return
+    setRemovingCover(true)
+    try {
+      await removeTripCoverPhoto(trip.id)
+      const { coverImageUrl, ...rest } = trip
+      setTrip(rest as Trip)
+    } catch (err) {
+      console.error('Failed to remove cover photo:', err)
+    } finally {
+      setRemovingCover(false)
+    }
+  }
+
   async function handleSaveVoiceNote(audioBlob: Blob, transcript: string) {
     if (!tripId || !currentUser) return
     const userName = currentUser.displayName || currentUser.email || 'Someone'
@@ -244,12 +260,24 @@ export default function TripDetailPage() {
         )}
         {canEdit && (
           <>
-            <button
-              onClick={() => coverFileInputRef.current?.click()}
-              className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border-2 border-ink bg-white/90 px-3 py-1.5 text-[12px] font-bold opacity-0 shadow-hard-sm backdrop-blur-sm transition-opacity group-hover:opacity-100"
-            >
-              <Camera size={13} /> {trip.coverImageUrl ? 'Change cover' : 'Add cover photo'}
-            </button>
+            <div className="absolute right-4 top-4 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                onClick={() => coverFileInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded-full border-2 border-ink bg-white/90 px-3 py-1.5 text-[12px] font-bold shadow-hard-sm backdrop-blur-sm"
+              >
+                <Camera size={13} /> {trip.coverImageUrl ? 'Change cover' : 'Add cover photo'}
+              </button>
+              {trip.coverImageUrl && (
+                <button
+                  onClick={handleRemoveCoverPhoto}
+                  disabled={removingCover}
+                  aria-label="Remove cover photo"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-ink bg-white/90 shadow-hard-sm backdrop-blur-sm disabled:opacity-60"
+                >
+                  {removingCover ? <Spinner size={13} /> : <X size={14} />}
+                </button>
+              )}
+            </div>
             <input
               ref={coverFileInputRef}
               type="file"
@@ -262,7 +290,7 @@ export default function TripDetailPage() {
       </div>
 
       <div className="mx-auto max-w-[1180px] px-8">
-        <div className="-mt-10 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-8 mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="sticker-card bg-white px-6 py-5 shadow-hard-sm">
             <button onClick={() => navigate('/dashboard')} className="mb-2 text-[12px] font-bold text-[#4a4460]">
               ← Back to trips
