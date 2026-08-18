@@ -9,6 +9,7 @@ type Props = {
   items: ItineraryItem[]
   canEdit: boolean
   onEditItem: (item: ItineraryItem) => void
+  onAddPlan: () => void
 }
 
 /** Every calendar day from trip.startDate to trip.endDate, inclusive, as "YYYY-MM-DD" strings. */
@@ -38,7 +39,7 @@ function formatTime(time: string | null): string {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`
 }
 
-export default function ItineraryView({ trip, items, canEdit, onEditItem }: Props) {
+export default function ItineraryView({ trip, items, canEdit, onEditItem, onAddPlan }: Props) {
   const tripDays = getTripDays(trip.startDate, trip.endDate)
   const [activeDay, setActiveDay] = useState(tripDays[0])
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -56,22 +57,29 @@ export default function ItineraryView({ trip, items, canEdit, onEditItem }: Prop
 
   return (
     <div>
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        {tripDays.map((day, i) => {
-          const count = items.filter((item) => item.day === day).length
-          return (
-            <button
-              key={day}
-              onClick={() => setActiveDay(day)}
-              className={`shrink-0 rounded-full border-2 border-ink px-3.5 py-2 text-[12.5px] font-bold transition-colors ${
-                activeDay === day ? 'bg-ink text-white' : 'bg-white text-ink'
-              }`}
-            >
-              {formatDayLabel(day, i)}
-              {count > 0 && <span className="ml-1.5 font-mono text-[10.5px] opacity-70">({count})</span>}
-            </button>
-          )
-        })}
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {tripDays.map((day, i) => {
+            const count = items.filter((item) => item.day === day).length
+            return (
+              <button
+                key={day}
+                onClick={() => setActiveDay(day)}
+                className={`shrink-0 rounded-full border-2 border-ink px-3.5 py-2 text-[12.5px] font-bold transition-colors ${
+                  activeDay === day ? 'bg-ink text-white' : 'bg-white text-ink'
+                }`}
+              >
+                {formatDayLabel(day, i)}
+                {count > 0 && <span className="ml-1.5 font-mono text-[10.5px] opacity-70">({count})</span>}
+              </button>
+            )
+          })}
+        </div>
+        {canEdit && (
+          <button onClick={onAddPlan} className="btn-primary shrink-0 !px-4 !py-2.5 !text-[13px]">
+            + Add plan
+          </button>
+        )}
       </div>
 
       {dayItems.length === 0 ? (

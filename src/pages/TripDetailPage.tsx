@@ -423,20 +423,6 @@ export default function TripDetailPage() {
             </div>
           )}
 
-          {view === 'itinerary' && canEdit && (
-            <div className="mb-6 flex justify-end">
-              <button
-                onClick={() => {
-                  setEditingItineraryItem(null)
-                  setShowAddItinerary(true)
-                }}
-                className="btn-primary !px-5 !py-3 !text-[14px]"
-              >
-                + Add plan
-              </button>
-            </div>
-          )}
-
           {view === 'photos' ? (
             entries.length === 0 ? (
               <div className="py-16 text-center text-[14.5px] font-medium text-[#4a4460]">
@@ -472,6 +458,10 @@ export default function TripDetailPage() {
               canEdit={canEdit}
               onEditItem={(item) => {
                 setEditingItineraryItem(item)
+                setShowAddItinerary(true)
+              }}
+              onAddPlan={() => {
+                setEditingItineraryItem(null)
                 setShowAddItinerary(true)
               }}
             />
